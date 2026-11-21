@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picá Autónoma | Guía Gastronómica & BAES - Universidad Autónoma de Chile</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet.js CSS (Mapa Interactivo OpenStreetMap) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        ua: {
+                            red: '#D52B1E',
+                            redDark: '#B02015',
+                            redLight: '#FCEAEA',
+                            charcoal: '#3D3935',
+                            charcoalDark: '#262320',
+                            neutral: '#F4F4F4',
+                            baes: '#15803D',
+                            baesLight: '#DCFCE7'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js para Métricas de Administración -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Leaflet.js JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        /* Estilos personalizados complementarios y animaciones */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F4F4F4;
+            color: #3D3935;
+        }
+
+        /* Transiciones suaves de vista */
+        .view-section {
+            display: none;
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animación de pulso para marcador seleccionado por Chatbot */
+        @keyframes markerPulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(213, 43, 30, 0.75); }
+            70% { transform: scale(1.25); box-shadow: 0 0 0 18px rgba(213, 43, 30, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(213, 43, 30, 0); }
+        }
+        .marker-highlight {
+            animation: markerPulse 1.4s infinite;
+            z-index: 999 !important;
+        }
+
+        /* Estilos del contenedor de Mapa Leaflet */
+        #providencia-map {
+            width: 100%;
+            height: 460px;
+            z-index: 10;
+        }
+        @media (min-width: 1024px) {
+            #providencia-map {
+                height: 540px;
+            }
+        }
+
+        /* Personalización de Scrollbar en Chatbot */
+        .chat-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Toast de notificaciones */
+        #toast-container {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 9999;
+        }
+        @media (min-width: 768px) {
+            #toast-container {
+                bottom: 24px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between pb-16 md:pb-0">
+
+    <!-- ===================================================================== -->
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR (INSTITUCIONAL UA)                       -->
+    <!-- ===================================================================== -->
+    <header class="bg-white border-b-4 border-ua-red shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Identidad Visual: Escudo UA + Nombre del Proyecto -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('inicio')">
+                    <div class="bg-ua-red text-white px-3 py-2 rounded-lg flex flex-col items-center justify-center shadow-sm border border-ua-redDark">
+                        <span class="text-[8px] font-bold tracking-widest uppercase leading-none mb-0.5">DUC IN ALTUM</span>
+                        <span class="text-xl font-extrabold tracking-tight leading-none font-serif">UA</span>
+                    </div>
+                    <div class="border-l-2 border-gray-200 pl-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl sm:text-2xl font-extrabold text-ua-charcoal tracking-tight">Picá <span class="text-ua-red">Autónoma</span></span>
+                            <span class="hidden sm:inline-block bg-ua-baesLight text-ua-baes text-[11px] font-bold px-2 py-0.5 rounded-full border border-green-300">RUTA BAES</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 font-medium">Campus Providencia · <span class="text-ua-red font-semibold">MÁS</span> UNIVERSIDAD</p>
+                    </div>
+                </div>
+
+                <!-- Navegación Desktop -->
+                <nav class="hidden md:flex items-center space-x-1 lg:space-x-2" id="desktop-nav">
+                    <button onclick="switchView('inicio')" data-nav="inicio" class="nav-btn active-nav px-3.5 py-2 rounded-lg text-sm font-semibold transition-all bg-ua-red text-white shadow-sm">
+                        <i class="fa-solid fa-house mr-1.5"></i>Inicio
+                    </button>
+                    <button onclick="switchView('explorador')" data-nav="explorador" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold text-ua-charcoal hover:bg-ua-neutral transition-all">
+                        <i class="fa-solid fa-map-location-dot mr-1.5 text-ua-red"></i>Mapa & Asistente IA
+                    </button>
+                    <button onclick="switchView('proyecto')" data-nav="proyecto" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold text-ua-charcoal hover:bg-ua-neutral transition-all">
+                        <i class="fa-solid fa-chart-pie mr-1.5 text-ua-red"></i>Diagnóstico & Factibilidad
+                    </button>
+                    <button onclick="switchView('nosotros')" data-nav="nosotros" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold text-ua-charcoal hover:bg-ua-neutral transition-all">
+                        <i class="fa-solid fa-users mr-1.5 text-ua-red"></i>Quiénes Somos
+                    </button>
+                </nav>
+
+                <!-- Botón Acceso Restringido Administradores -->
+                <div class="flex items-center gap-2">
+                    <button id="admin-nav-btn" onclick="handleAdminAccess()" class="flex items-center gap-2 bg-ua-charcoal hover:bg-ua-charcoalDark text-white px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition shadow-sm">
+                        <i class="fa-solid fa-lock text-ua-red" id="admin-lock-icon"></i>
+                        <span id="admin-btn-text">Acceso Admin</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- CONTENEDOR PRINCIPAL DE VISTAS INDEPENDIENTES                         -->
+    <!-- ===================================================================== -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- ================================================================= -->
+        <!-- VISTA 1: INICIO (LANDING / PROPUESTA DE VALOR)                    -->
+        <!-- ================================================================= -->
+        <section id="view-inicio" class="view-section active space-y-8">
+            <!-- Hero Section Institucional -->
+            <div class="bg-gradient-to-br from-ua-charcoal via-ua-charcoalDark to-[#1c1917] text-white rounded-2xl p-6 sm:p-10 lg:p-12 shadow-xl relative overflow-hidden border-b-8 border-ua-red">
+                <div class="absolute top-0 right-0 opacity-10 pointer-events-none select-none p-6">
+                    <span class="text-8xl sm:text-9xl font-serif font-black tracking-tighter">UA</span>
+                </div>
+                <div class="relative z-10 max-w-3xl space-y-5">
+                    <div class="inline-flex items-center gap-2 bg-ua-red/90 text-white text-xs font-bold px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow">
+                        <i class="fa-solid fa-utensils"></i> Emprendimiento Comunicacional · Providencia
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
+                        Almuerzos reales, económicos y con <span class="text-green-400">BAES</span> cerca de tu campus.
+                    </h1>
+                    <p class="text-gray-200 text-base sm:text-lg leading-relaxed">
+                        Combatimos el sesgo algorítmico de los buscadores tradicionales que solo muestran cadenas de comida rápida (McDonald's, KFC, Wendy's) o locales de alto costo (MUT). Conectamos a los estudiantes de la <strong>Universidad Autónoma de Chile</strong> con las verdaderas picadas independientes de Providencia.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-3 sm:gap-4">
+                        <button onclick="switchView('explorador')" class="bg-ua-red hover:bg-ua-redDark text-white font-bold px-6 py-3.5 rounded-xl shadow-lg transition transform hover:-translate-y-0.5 flex items-center gap-2 text-sm sm:text-base">
+                            <i class="fa-solid fa-location-crosshairs"></i> Explorar Mapa y Asistente IA
+                        </button>
+                        <button onclick="switchView('proyecto')" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/25 text-white font-semibold px-5 py-3.5 rounded-xl transition flex items-center gap-2 text-sm sm:text-base">
+                            <i class="fa-solid fa-file-lines"></i> Ver Diagnóstico y Modelo
+                        </button>
+                        <button onclick="switchView('nosotros')" class="bg-transparent hover:bg-white/10 text-gray-200 font-medium px-4 py-3.5 rounded-xl transition flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-circle-info"></i> Quiénes Somos
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evidencia Empírica: Criterios de Decisión Alimentaria (Datos del Informe) -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-ua-red">Evidencia Primaria · Estudiantes UA Providencia</span>
+                        <h2 class="text-2xl font-extrabold text-ua-charcoal mt-1">¿Qué priorizamos al elegir dónde almorzar?</h2>
+                    </div>
+                    <p class="text-xs text-gray-500 max-w-md">
+                        Resultados obtenidos mediante investigación primaria (encuesta y entrevista en profundidad) a estudiantes de 20 a 25 años de la Universidad Autónoma en Providencia.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- KPI 1 -->
+                    <div class="bg-ua-neutral rounded-xl p-5 border-t-4 border-ua-red hover:shadow-md transition">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-ua-red">80%</span>
+                            <div class="w-10 h-10 rounded-full bg-ua-redLight text-ua-red flex items-center justify-center">
+                                <i class="fa-solid fa-wallet text-lg"></i>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-ua-charcoal text-sm">Presupuesto Estudiantil</h3>
+                        <p class="text-xs text-gray-600 mt-1">Prioriza que el menú se ajuste a su bolsillo frente a la inflación alimentaria.</p>
+                    </div>
+
+                    <!-- KPI 2 -->
+                    <div class="bg-ua-neutral rounded-xl p-5 border-t-4 border-ua-charcoal hover:shadow-md transition">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-ua-charcoal">80%</span>
+                            <div class="w-10 h-10 rounded-full bg-gray-200 text-ua-charcoal flex items-center justify-center">
+                                <i class="fa-solid fa-person-walking text-lg"></i>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-ua-charcoal text-sm">Cercanía al Campus</h3>
+                        <p class="text-xs text-gray-600 mt-1">A menos de 5-10 minutos caminando desde Pedro de Valdivia / Ricardo Lyon.</p>
+                    </div>
+
+                    <!-- KPI 3 -->
+                    <div class="bg-ua-neutral rounded-xl p-5 border-t-4 border-ua-baes hover:shadow-md transition">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-ua-baes">70%</span>
+                            <div class="w-10 h-10 rounded-full bg-ua-baesLight text-ua-baes flex items-center justify-center">
+                                <i class="fa-solid fa-credit-card text-lg"></i>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-ua-charcoal text-sm">Pago con BAES / Junaeb</h3>
+                        <p class="text-xs text-gray-600 mt-1">Indispensable contar con verificación real de aceptación de tarjeta o app BAES.</p>
+                    </div>
+
+                    <!-- KPI 4 -->
+                    <div class="bg-ua-neutral rounded-xl p-5 border-t-4 border-amber-500 hover:shadow-md transition">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-amber-600">60%</span>
+                            <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                                <i class="fa-solid fa-star text-lg"></i>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-ua-charcoal text-sm">Sabor & Calidad Casera</h3>
+                        <p class="text-xs text-gray-600 mt-1">Comida abundante y bien valorada por la propia comunidad universitaria.</p>
+                    </div>
+
+                    <!-- KPI 5 -->
+                    <div class="bg-ua-neutral rounded-xl p-5 border-t-4 border-blue-600 hover:shadow-md transition">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-blue-600">40%</span>
+                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <i class="fa-solid fa-bolt text-lg"></i>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-ua-charcoal text-sm">Rapidez entre Ventanas</h3>
+                        <p class="text-xs text-gray-600 mt-1">Atención ágil para alcanzar a volver a clases sin retrasos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bloques Destacados de Propuesta de Valor -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-ua-redLight text-ua-red flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-eye-slash"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-ua-charcoal mb-2">Sin Sesgo Algorítmico</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">
+                            El 63,6% busca en Google, pero el SEO solo muestra grandes franquicias. Aquí los locales independientes no pagan por posicionarse: el ranking depende solo de tu bolsillo y cercanía.
+                        </p>
+                    </div>
+                    <button onclick="switchView('explorador')" class="mt-5 text-ua-red font-bold text-sm hover:underline flex items-center gap-1">
+                        Ir al mapa interactivo <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-ua-baesLight text-ua-baes flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-ua-charcoal mb-2">AutónomoBot Conectado</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">
+                            Nuestro asistente calcula en segundos la mejor picada cruzando tu ubicación GPS, presupuesto y nota en Google, moviendo el mapa directamente hacia tu mejor alternativa.
+                        </p>
+                    </div>
+                    <button onclick="switchView('explorador')" class="mt-5 text-ua-baes font-bold text-sm hover:underline flex items-center gap-1">
+                        Consultar al asistente <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-gray-100 text-ua-charcoal flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-ua-charcoal mb-2">Verificación Editorial</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">
+                            Cada ficha indica la fecha exacta de verificación, si acepta BAES en toda la carta o solo menú del día, y permite a la comunidad reportar cambios al instante.
+                        </p>
+                    </div>
+                    <button onclick="switchView('proyecto')" class="mt-5 text-ua-charcoal font-bold text-sm hover:underline flex items-center gap-1">
+                        Conocer protocolo editorial <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VISTA 2: EXPLORADOR & ASISTENTE IA (MAPA IZQ + CHATBOT DER)       -->
+        <!-- ================================================================= -->
+        <section id="view-explorador" class="view-section space-y-5">
+            <!-- Banner de Permisos de Geolocalización -->
+            <div id="geo-banner" class="bg-white border-l-4 border-ua-red rounded-xl p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-10 h-10 rounded-full bg-ua-redLight text-ua-red flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i class="fa-solid fa-location-dot text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h2 class="font-bold text-ua-charcoal text-sm sm:text-base">Geolocalización para Cálculo de Distancia Real</h2>
+                            <span id="geo-status-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                                Ubicación pendiente
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-gray-600 mt-1">
+                            Solicitamos acceso a tu ubicación para calcular la distancia exacta desde tu punto en Providencia hasta cada picada y recomendarte la mejor opción según cercanía, precio y BAES, <strong>sin almacenar ni comercializar tus datos</strong>.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 flex-shrink-0">
+                    <button onclick="requestRealLocation()" class="bg-ua-red hover:bg-ua-redDark text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-crosshairs"></i> Permitir mi Ubicación GPS
+                    </button>
+                    <button onclick="simulateCampusLocation()" class="bg-ua-neutral hover:bg-gray-200 text-ua-charcoal border border-gray-300 text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-university text-ua-red"></i> Simular Campus UA Providencia
+                    </button>
+                </div>
+            </div>
+
+            <!-- Layout Dividido: Mapa Interactivo a la Izquierda + Chatbot a la Derecha -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- COLUMNA IZQUIERDA (7 cols en lg): MAPA INTERACTIVO LEAFLET + FICHA DETALLE -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <!-- Barra de Filtros Rápidos -->
+                        <div class="p-3.5 sm:p-4 bg-ua-charcoal text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-map-pin text-ua-red"></i>
+                                <span class="font-bold text-sm">Mapa de Picadas · Entorno Providencia</span>
+                                <span id="locales-count-badge" class="bg-white/15 text-xs px-2 py-0.5 rounded-full">10 locales</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5" id="map-filters">
+                                <button onclick="filterMapPlaces('all')" data-filter="all" class="filter-chip active-chip bg-ua-red text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+                                    Todos
+                                </button>
+                                <button onclick="filterMapPlaces('baes')" data-filter="baes" class="filter-chip bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-credit-card text-green-400 mr-1"></i>Junaeb / BAES
+                                </button>
+                                <button onclick="filterMapPlaces('cheap')" data-filter="cheap" class="filter-chip bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                    Menú &lt; $4.500
+                                </button>
+                                <button onclick="filterMapPlaces('near')" data-filter="near" class="filter-chip bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                    &lt; 5 min caminando
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Leyenda rápida del Mapa -->
+                        <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between text-[11px] text-gray-600 gap-2">
+                            <div class="flex items-center gap-4">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-ua-charcoal inline-block border border-white shadow"></span> Campus UA / Tu Ubicación</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-ua-baes inline-block border border-white shadow"></span> Picada con BAES</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-ua-red inline-block border border-white shadow"></span> Picada Económica</span>
+                            </div>
+                            <span class="text-gray-400 italic">Haz clic en cualquier pin para ver detalles</span>
+                        </div>
+
+                        <!-- Contenedor del Mapa Leaflet -->
+                        <div id="providencia-map"></div>
+                    </div>
+
+                    <!-- Tarjeta de Detalle del Local Seleccionado -->
+                    <div id="selected-place-card" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 transition-all">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-gray-100 pb-4">
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span id="detail-badge-baes" class="bg-ua-baesLight text-ua-baes text-xs font-bold px-2.5 py-0.5 rounded-full border border-green-300">
+                                        <i class="fa-solid fa-check-circle mr-1"></i>Acepta Junaeb / BAES (Toda la carta)
+                                    </span>
+                                    <span id="detail-rating" class="bg-amber-50 text-amber-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-200">
+                                        4.8 ★ en Google
+                                    </span>
+                                    <span id="detail-distance" class="bg-gray-100 text-ua-charcoal text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                                        <i class="fa-solid fa-person-walking mr-1 text-ua-red"></i>240 m (3 min)
+                                    </span>
+                                </div>
+                                <h3 id="detail-name" class="text-xl font-extrabold text-ua-charcoal mt-2">El Bajón de Pedro de Valdivia</h3>
+                                <p id="detail-address" class="text-xs sm:text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-ua-red"></i> Av. Pedro de Valdivia 482, Providencia
+                                </p>
+                            </div>
+                            <div class="text-left sm:text-right bg-ua-neutral px-4 py-2.5 rounded-xl border border-gray-200 flex-shrink-0">
+                                <span class="text-[11px] text-gray-500 block font-medium">Precio Referencial</span>
+                                <span id="detail-price" class="text-lg font-black text-ua-red">$3.800 - $4.500</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4 text-sm">
+                            <div class="sm:col-span-2 space-y-2">
+                                <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Oferta Gastronómica</p>
+                                <p id="detail-desc" class="text-gray-700 text-sm leading-relaxed">
+                                    Colaciones caseras abundantes (cazuela, pastel de choclo, pollo arvejado con agregado) + jugo natural y pan amasado. Ideal para almorzar rápido entre clases.
+                                </p>
+                                <div class="flex flex-wrap gap-2 pt-1">
+                                    <span id="detail-type" class="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md font-medium">
+                                        <i class="fa-solid fa-bowl-food mr-1 text-ua-red"></i>Comida Casera / Menú
+                                    </span>
+                                    <span id="detail-speed" class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-medium">
+                                        <i class="fa-solid fa-stopwatch mr-1"></i>Atención Rápida (8-12 min)
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-200 space-y-2 text-xs">
+                                <div>
+                                    <span class="text-gray-400 block font-semibold">Horario Jornada Académica</span>
+                                    <span id="detail-hours" class="text-ua-charcoal font-bold">Lun a Vie: 11:30 - 17:30 hrs</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400 block font-semibold">Contacto / Pedidos</span>
+                                    <span id="detail-phone" class="text-ua-charcoal font-bold">+56 9 8412 3390</span>
+                                </div>
+                                <div class="pt-1 border-t border-gray-200 flex items-center justify-between">
+                                    <span class="text-[11px] text-green-700 font-semibold"><i class="fa-solid fa-shield-check mr-1"></i>Verificado: <span id="detail-verified">18/11/2026</span></span>
+                                    <button onclick="openReportModal()" class="text-[11px] text-ua-red hover:underline font-semibold">Reportar dato</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMNA DERECHA (5 cols en lg): CHATBOT ESPECIALIZADO AUTÓNOMOBOT -->
+                <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[640px] lg:h-[735px] overflow-hidden">
+                    <!-- Header del Chatbot -->
+                    <div class="bg-gradient-to-r from-ua-red to-ua-redDark text-white p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-white text-ua-red flex items-center justify-center font-black text-lg shadow">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-base leading-none">AutónomoBot</h3>
+                                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                                </div>
+                                <p class="text-[11px] text-red-100 mt-1">Asistente Exclusivo · Picadas & BAES Providencia</p>
+                            </div>
+                        </div>
+                        <button onclick="resetChat()" title="Reiniciar conversación" class="text-white/80 hover:text-white text-xs bg-white/10 px-2.5 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Aviso de Política Editorial del Bot -->
+                    <div class="bg-amber-50 border-b border-amber-200 px-3.5 py-2 text-[11px] text-amber-900 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-amber-600 flex-shrink-0"></i>
+                        <span>Respuestas 100% basadas en fichas verificadas. Ningún local paga por ser recomendado.</span>
+                    </div>
+
+                    <!-- Área de Mensajes del Chat -->
+                    <div id="chat-messages" class="flex-grow p-4 overflow-y-auto chat-scroll space-y-3.5 bg-[#FAFAFA]">
+                        <!-- Mensaje de Bienvenida Inicial -->
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-ua-red text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">
+                                UA
+                            </div>
+                            <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-none p-3.5 shadow-sm text-sm text-ua-charcoal max-w-[88%] space-y-2">
+                                <p>¡Hola! Soy <strong>AutónomoBot</strong>, tu guía gastronómica para estudiantes de la <strong>Universidad Autónoma en Providencia</strong>.</p>
+                                <p class="text-xs text-gray-600">
+                                    Estoy entrenado exclusivamente para ayudarte a encontrar dónde comer cruzando <strong>precio económico, distancia desde tu ubicación, valoración en Google y pago con BAES</strong>. Cuando te recomiende un local, moveré el mapa automáticamente hacia él.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sugerencias Rápidas (Chips interactivos) -->
+                    <div class="px-3.5 py-2.5 bg-white border-t border-gray-100">
+                        <p class="text-[11px] font-semibold text-gray-400 mb-1.5">Consultas frecuentes (haz clic):</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button onclick="sendSuggestedQuery('¿Cuál es el mejor local según valoración, ubicación y precio?')" class="text-[11px] bg-ua-redLight hover:bg-red-100 text-ua-red font-semibold px-2.5 py-1.5 rounded-lg border border-red-200 transition text-left">
+                                🏆 Mejor opción (Nota + Distancia + Precio)
+                            </button>
+                            <button onclick="sendSuggestedQuery('Recomiéndame picadas baratas que acepten Junaeb BAES')" class="text-[11px] bg-ua-baesLight hover:bg-green-200 text-ua-baes font-semibold px-2.5 py-1.5 rounded-lg border border-green-300 transition text-left">
+                                💳 Picadas con Junaeb / BAES
+                            </button>
+                            <button onclick="sendSuggestedQuery('Tengo $4.000 y poco tiempo entre clases, ¿qué me recomiendas?')" class="text-[11px] bg-gray-100 hover:bg-gray-200 text-ua-charcoal font-semibold px-2.5 py-1.5 rounded-lg border border-gray-300 transition text-left">
+                                ⚡ Almuerzo rápido &lt; $4.000
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Input de Texto del Chatbot -->
+                    <form onsubmit="handleChatSubmit(event)" class="p-3 bg-white border-t border-gray-200 flex items-center gap-2">
+                        <input 
+                            type="text" 
+                            id="chat-input" 
+                            placeholder="Ej: ¿Dónde almorzar barato con BAES cerca?" 
+                            class="flex-grow bg-ua-neutral border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-ua-red focus:bg-white transition"
+                            autocomplete="off"
+                        >
+                        <button type="submit" class="bg-ua-red hover:bg-ua-redDark text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition flex items-center gap-1.5">
+                            <span>Enviar</span>
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VISTA 3: PROYECTO & FACTIBILIDAD (BASADO EN LOS PDFs ADJUNTOS)    -->
+        <!-- ================================================================= -->
+        <section id="view-proyecto" class="view-section space-y-8">
+            <!-- Encabezado del Informe Académico -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 border-l-8 border-l-ua-red">
+                <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-ua-red uppercase tracking-wider mb-2">
+                    <span>Facultad de Ciencias Sociales y Humanidades</span>
+                    <span>•</span>
+                    <span>Carrera de Periodismo</span>
+                    <span>•</span>
+                    <span>Formulación de Proyectos y Emprendimiento</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-ua-charcoal">Diagnóstico Comunicacional, Modelo de Negocio y Factibilidad</h1>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 max-w-4xl leading-relaxed">
+                    Síntesis estructurada del proyecto de emprendimiento comunicacional diseñado para resolver la <strong>asimetría de visibilidad digital</strong> que enfrentan los estudiantes de la Universidad Autónoma de Chile en la comuna de Providencia (20 a 25 años, segmentos socioeconómicos C2 y C3).
+                </p>
+            </div>
+
+            <!-- 1. Comparativa de Alternativas (Tabla del Informe) -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+                <h2 class="text-xl font-extrabold text-ua-charcoal mb-1">1. Matriz Comparativa frente a Alternativas Existentes</h2>
+                <p class="text-xs sm:text-sm text-gray-500 mb-5">Por qué los canales tradicionales no resuelven eficientemente la necesidad de alimentación estudiantil en Providencia.</p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-ua-charcoal text-white">
+                                <th class="p-3.5 rounded-tl-xl font-bold">Criterio / Variable</th>
+                                <th class="p-3.5 font-bold">Navegador Google (63,6%)</th>
+                                <th class="p-3.5 font-bold">Redes Sociales (36,4%)</th>
+                                <th class="p-3.5 font-bold">Apps de Delivery</th>
+                                <th class="p-3.5 rounded-tr-xl bg-ua-red font-extrabold">Picá Autónoma (Propuesta)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3.5 font-bold text-ua-charcoal">Visibilidad Comercio Local</td>
+                                <td class="p-3.5 text-gray-600"><span class="text-red-600 font-semibold">Baja:</span> SEO prioriza McDonald's, KFC, Wendy's y MUT.</td>
+                                <td class="p-3.5 text-gray-600"><span class="text-amber-600 font-semibold">Dispersa:</span> Jerarquizada por patrocinios y entretenimiento.</td>
+                                <td class="p-3.5 text-gray-600"><span class="text-red-600 font-semibold">Baja:</span> Predominio de cadenas comerciales.</td>
+                                <td class="p-3.5 bg-ua-redLight/40 font-semibold text-ua-charcoal"><span class="text-ua-baes font-bold">Alta:</span> Foco exclusivo en picadas económicas independientes.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3.5 font-bold text-ua-charcoal">Claridad Precios & BAES</td>
+                                <td class="p-3.5 text-gray-600">Deficiente (27,3% reclama datos poco claros; sin filtro BAES).</td>
+                                <td class="p-3.5 text-gray-600">Incompleta: Sin estructura fija de precios ni menú diario.</td>
+                                <td class="p-3.5 text-gray-600">Encarece presupuesto por tarifas de despacho.</td>
+                                <td class="p-3.5 bg-ua-redLight/40 font-semibold text-ua-charcoal"><span class="text-ua-baes font-bold">Óptima:</span> Filtros por presupuesto (80%), cercanía (80%) y BAES (70%).</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3.5 font-bold text-ua-charcoal">Principal Limitación</td>
+                                <td class="p-3.5 text-gray-600">Repite siempre los mismos resultados comerciales.</td>
+                                <td class="p-3.5 text-gray-600">Flujo abismal sin orden por necesidad socioeconómica.</td>
+                                <td class="p-3.5 text-gray-600">No resuelve el almuerzo presencial rápido entre clases.</td>
+                                <td class="p-3.5 bg-ua-redLight/40 font-semibold text-ua-charcoal">Requiere actualización editorial constante (mitigado vía reportes).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. Análisis Interactivo de las 5 Fuerzas de Porter -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-2">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-ua-charcoal">2. Análisis Estratégico: Las 5 Fuerzas de Porter</h2>
+                        <p class="text-xs sm:text-sm text-gray-500">Haz clic en cada fuerza para inspeccionar el diagnóstico competitivo y nuestra respuesta estratégica.</p>
+                    </div>
+                    <span class="text-xs bg-gray-100 text-ua-charcoal font-bold px-3 py-1 rounded-full">Marco: Michael Porter (2008)</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-5" id="porter-buttons">
+                    <button onclick="selectPorter(0)" class="porter-tab active-porter p-3.5 rounded-xl border-2 border-ua-red bg-ua-redLight text-left transition">
+                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-red-600 text-white">ALTA</span>
+                        <h3 class="font-bold text-sm text-ua-charcoal mt-2">1. Rivalidad Competitiva</h3>
+                    </button>
+                    <button onclick="selectPorter(1)" class="porter-tab p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 text-left transition">
+                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500 text-white">MODERADA</span>
+                        <h3 class="font-bold text-sm text-ua-charcoal mt-2">2. Nuevos Entrantes</h3>
+                    </button>
+                    <button onclick="selectPorter(2)" class="porter-tab p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 text-left transition">
+                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-red-600 text-white">ALTO</span>
+                        <h3 class="font-bold text-sm text-ua-charcoal mt-2">3. Poder Compradores</h3>
+                    </button>
+                    <button onclick="selectPorter(3)" class="porter-tab p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 text-left transition">
+                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500 text-white">MODERADO</span>
+                        <h3 class="font-bold text-sm text-ua-charcoal mt-2">4. Poder Proveedores</h3>
+                    </button>
+                    <button onclick="selectPorter(4)" class="porter-tab p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 text-left transition">
+                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-red-600 text-white">ALTA</span>
+                        <h3 class="font-bold text-sm text-ua-charcoal mt-2">5. Amenaza Sustitutos</h3>
+                    </button>
+                </div>
+
+                <div id="porter-detail-box" class="bg-ua-neutral rounded-xl p-5 border border-gray-200">
+                    <!-- Dinámico via JS -->
+                </div>
+            </div>
+
+            <!-- 3. Evaluación Tecnológica de Plataforma & Modelo de Financiamiento -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Evaluación de Plataforma (GitHub Pages / PWA vs Google Sites vs App Nativa) -->
+                <div class="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-200 space-y-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-ua-charcoal text-white flex items-center justify-center">
+                            <i class="fa-solid fa-code"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-extrabold text-ua-charcoal">3. Evaluación de Arquitectura Tecnológica</h2>
+                            <p class="text-xs text-gray-500">¿Por qué elegimos Web App Progresiva (PWA) en GitHub Pages / Vercel?</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <div class="p-3.5 rounded-xl bg-ua-baesLight/60 border border-green-300">
+                            <div class="flex justify-between items-center font-bold text-ua-baes mb-1">
+                                <span><i class="fa-solid fa-trophy mr-1.5"></i>Opción Seleccionada: PWA (HTML5/JS + Leaflet + GitHub Pages)</span>
+                                <span class="bg-ua-baes text-white text-[10px] px-2 py-0.5 rounded-full">ÓPTIMA</span>
+                            </div>
+                            <p class="text-gray-700 text-xs leading-relaxed">
+                                Alojamiento gratuito ($0 CLP en GitHub Pages/Vercel), acceso instantáneo mediante códigos QR en el campus sin descargar aplicaciones pesadas (99,1% acceso móvil SUBTEL 2025), mapas abiertos OpenStreetMap/Leaflet sin costos por API y control total del chatbot sin sesgos comerciales.
+                            </p>
+                        </div>
+
+                        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-200">
+                            <div class="flex justify-between items-center font-bold text-gray-700 mb-1">
+                                <span><i class="fa-brands fa-google mr-1.5"></i>Alternativa Descartada 1: Google Sites</span>
+                                <span class="bg-gray-200 text-gray-600 text-[10px] px-2 py-0.5 rounded-full">LIMITADA</span>
+                            </div>
+                            <p class="text-gray-600 text-xs">
+                                No permite lógica personalizada de geolocalización GPS en tiempo real, ni vincular un chatbot inteligente que anime pines en el mapa, ni un panel de administración con métricas editoriales propias.
+                            </p>
+                        </div>
+
+                        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-200">
+                            <div class="flex justify-between items-center font-bold text-gray-700 mb-1">
+                                <span><i class="fa-solid fa-mobile-screen mr-1.5"></i>Alternativa Descartada 2: App Nativa (iOS / Android)</span>
+                                <span class="bg-gray-200 text-gray-600 text-[10px] px-2 py-0.5 rounded-full">ALTO COSTO</span>
+                            </div>
+                            <p class="text-gray-600 text-xs">
+                                Elevado costo inicial de desarrollo dual y licencias de tiendas (App Store / Google Play), generando fricción de descarga y consumo innecesario de datos móviles para el estudiante.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sostenibilidad y Financiamiento (Fondos Santander 2026 + Publicidad Ética) -->
+                <div class="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-gray-200 space-y-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-ua-red text-white flex items-center justify-center">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-extrabold text-ua-charcoal">4. Sostenibilidad Sin Privilegios Comerciales</h2>
+                            <p class="text-xs text-gray-500">Modelo de financiamiento ético declarado en el informe</p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                        El servicio es y será <strong>100% gratuito para estudiantes y picadas independientes</strong>. Ningún restaurante puede pagar por aparecer primero o mejorar su calificación. La sostenibilidad se proyecta en dos etapas complementarias:
+                    </p>
+
+                    <div class="space-y-3">
+                        <div class="p-3.5 rounded-xl bg-ua-neutral border-l-4 border-ua-red">
+                            <h4 class="font-bold text-sm text-ua-charcoal">Etapa 1: Fondos Concursables Banco Santander 2026</h4>
+                            <p class="text-xs text-gray-600 mt-1">
+                                Postulación en línea de bienestar social y financiero estudiantil (en alianza institucional), cubriendo desarrollo técnico, dominio, verificación en terreno y validación piloto (respetando el tope del 60% en honorarios según bases).
+                            </p>
+                        </div>
+
+                        <div class="p-3.5 rounded-xl bg-ua-neutral border-l-4 border-ua-charcoal">
+                            <h4 class="font-bold text-sm text-ua-charcoal">Etapa 2: Publicidad Digital Separada (Google AdMob / Banners)</h4>
+                            <p class="text-xs text-gray-600 mt-1">
+                                Una vez consolidada la base de usuarios, incorporación de anuncios generales claramente rotulados como "Publicidad" y separados visualmente de las fichas gastronómicas y recomendaciones de AutónomoBot.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VISTA 4: QUIÉNES SOMOS (IDENTIDAD INSTITUCIONAL Y CONTACTO)        -->
+        <!-- ================================================================= -->
+        <section id="view-nosotros" class="view-section space-y-8">
+            <!-- Cabecera Institucional -->
+            <div class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-gray-200 text-center max-w-4xl mx-auto">
+                <div class="inline-flex items-center gap-2 bg-ua-redLight text-ua-red font-bold text-xs px-3.5 py-1.5 rounded-full mb-3">
+                    <i class="fa-solid fa-graduation-cap"></i> UNIVERSIDAD AUTÓNOMA DE CHILE · CAMPUS PROVIDENCIA
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-ua-charcoal">Democratizando el acceso a la alimentación estudiantil</h1>
+                <p class="text-gray-600 text-sm sm:text-base mt-3 leading-relaxed">
+                    <strong>Picá Autónoma</strong> nace en las aulas de la Carrera de Periodismo (Facultad de Ciencias Sociales y Humanidades) como una respuesta concreta a una problemática cotidiana de nuestra comunidad universitaria: encontrar dónde comer rico, cerca y pagando con BAES sin quedar atrapados en los algoritmos comerciales.
+                </p>
+            </div>
+
+            <!-- Misión, Visión y Valores -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Misión -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border-t-4 border-ua-red">
+                    <div class="w-12 h-12 rounded-xl bg-ua-redLight text-ua-red flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <h2 class="text-xl font-extrabold text-ua-charcoal mb-2">Nuestra Misión</h2>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        Facilitar a los estudiantes de la Universidad Autónoma en Providencia el acceso inmediato a información clara, verificada y gratuita sobre picadas locales económicas y compatibles con BAES, superando el sesgo de los buscadores tradicionales.
+                    </p>
+                </div>
+
+                <!-- Visión -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border-t-4 border-ua-charcoal">
+                    <div class="w-12 h-12 rounded-xl bg-gray-100 text-ua-charcoal flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <h2 class="text-xl font-extrabold text-ua-charcoal mb-2">Nuestra Visión</h2>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        Consolidarnos como la plataforma de referencia en bienestar alimentario universitario en Providencia y escalar nuestro modelo de verificación comunitaria hacia todas las sedes de la Universidad Autónoma de Chile.
+                    </p>
+                </div>
+
+                <!-- Valores -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border-t-4 border-ua-baes">
+                    <div class="w-12 h-12 rounded-xl bg-ua-baesLight text-ua-baes flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <h2 class="text-xl font-extrabold text-ua-charcoal mb-2">Nuestros Valores</h2>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-ua-baes mt-1"></i> <span><strong>Transparencia Editorial:</strong> Cero pagos por posicionamiento.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-ua-baes mt-1"></i> <span><strong>Rigor Periodístico:</strong> Datos verificados en terreno con fecha visible.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-ua-baes mt-1"></i> <span><strong>Solidaridad Estudiantil:</strong> Apoyo directo al presupuesto C2-C3 y al comercio de barrio.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Equipo Fundador y Tarjeta de Contacto Oficial -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                <!-- Equipo Creador -->
+                <div class="lg:col-span-7 bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+                    <h2 class="text-xl font-extrabold text-ua-charcoal mb-1">Equipo Fundador & Roles Editoriales</h2>
+                    <p class="text-xs text-gray-500 mb-5">Estudiantes de Periodismo · Asignatura Formulación de Proyectos y Emprendimiento (Docente: Carlos Peña Dupouy)</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-ua-neutral p-4 rounded-xl border border-gray-200 text-center">
+                            <div class="w-14 h-14 rounded-full bg-ua-red text-white font-extrabold text-lg flex items-center justify-center mx-auto mb-3 shadow">
+                                PA
+                            </div>
+                            <h3 class="font-bold text-sm text-ua-charcoal">Pablo Alarcón Arévalo</h3>
+                            <p class="text-[11px] text-ua-red font-semibold mt-0.5">Coordinación & Contenido Editorial</p>
+                            <p class="text-xs text-gray-500 mt-2">Investigación de entorno, curaduría de fichas y redacción periodística.</p>
+                        </div>
+
+                        <div class="bg-ua-neutral p-4 rounded-xl border border-gray-200 text-center">
+                            <div class="w-14 h-14 rounded-full bg-ua-charcoal text-white font-extrabold text-lg flex items-center justify-center mx-auto mb-3 shadow">
+                                LP
+                            </div>
+                            <h3 class="font-bold text-sm text-ua-charcoal">Luciano Poblete Arredondo</h3>
+                            <p class="text-[11px] text-ua-red font-semibold mt-0.5">Verificación & Vínculo Locales</p>
+                            <p class="text-xs text-gray-500 mt-2">Catastro en terreno, validación de pagos BAES y gestión de reportes.</p>
+                        </div>
+
+                        <div class="bg-ua-neutral p-4 rounded-xl border border-gray-200 text-center">
+                            <div class="w-14 h-14 rounded-full bg-ua-redDark text-white font-extrabold text-lg flex items-center justify-center mx-auto mb-3 shadow">
+                                MS
+                            </div>
+                            <h3 class="font-bold text-sm text-ua-charcoal">Mateo Segovia Rosales</h3>
+                            <p class="text-[11px] text-ua-red font-semibold mt-0.5">Plataforma & Analítica de Datos</p>
+                            <p class="text-xs text-gray-500 mt-2">Arquitectura web móvil, mapa geolocalizado y métricas de impacto.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Contacto Oficial -->
+                <div class="lg:col-span-5 bg-ua-charcoal text-white rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col justify-between border-b-8 border-ua-red">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-red-400">Canales Oficiales</span>
+                        <h2 class="text-2xl font-extrabold mt-1">Contáctanos o Sugiere una Picada</h2>
+                        <p class="text-sm text-gray-300 mt-2 leading-relaxed">
+                            ¿Conoces un local económico en Providencia que acepte Junaeb/BAES o quieres vincular tu comercio independiente sin costo? Escríbenos directamente.
+                        </p>
+
+                        <div class="space-y-3 mt-6">
+                            <div class="flex items-center gap-3 bg-white/10 p-3.5 rounded-xl">
+                                <div class="w-10 h-10 rounded-lg bg-green-600 text-white flex items-center justify-center text-lg flex-shrink-0">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[11px] text-gray-300 block">Teléfono / WhatsApp Directo</span>
+                                    <span class="font-bold text-base tracking-wide">+569 63211443</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3 bg-white/10 p-3.5 rounded-xl">
+                                <div class="w-10 h-10 rounded-lg bg-ua-red text-white flex items-center justify-center text-lg flex-shrink-0">
+                                    <i class="fa-solid fa-envelope"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[11px] text-gray-300 block">Correo Electrónico Institucional</span>
+                                    <span class="font-bold text-base">picaautonoma@gmail.com</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-white/15">
+                        <a href="https://wa.me/56963211443?text=Hola%20equipo%20de%20Pic%C3%A1%20Aut%C3%B3noma,%20quiero%20sugerir%20un%20local%20econ%C3%B3mico%20en%20Providencia" target="_blank" rel="noopener" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm text-center transition flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                        </a>
+                        <a href="mailto:picaautonoma@gmail.com?subject=Contacto%20Pic%C3%A1%20Aut%C3%B3noma" class="bg-white hover:bg-gray-100 text-ua-charcoal font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm text-center transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane text-ua-red"></i> Enviar Correo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VISTA 5: PANEL DE ADMINISTRACIÓN (ACCESO RESTRINGIDO)             -->
+        <!-- ================================================================= -->
+        <section id="view-admin" class="view-section space-y-6">
+            <!-- Header del Panel Admin -->
+            <div class="bg-ua-charcoal text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-4 border-ua-red">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-ua-red text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full">MÓDULO RESTRINGIDO</span>
+                        <span class="text-xs text-gray-300">Sesión activa: Equipo Editorial UA</span>
+                    </div>
+                    <h1 class="text-2xl font-extrabold mt-1">Dashboard de Métricas de Éxito e Impacto Social</h1>
+                    <p class="text-xs sm:text-sm text-gray-300 mt-0.5">
+                        Evaluación basada en los indicadores del informe: utilidad informativa, resolución rápida y ahorro estudiantil (no lucro).
+                    </p>
+                </div>
+                <button onclick="logoutAdmin()" class="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 self-start sm:self-center">
+                    <i class="fa-solid fa-right-from-bracket text-ua-red"></i> Cerrar Sesión Admin
+                </button>
+            </div>
+
+            <!-- KPIs de Medición de Éxito (Basados en Informe) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200 border-l-4 border-l-ua-baes">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Índice de Éxito Pweb</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-3xl font-black text-ua-baes">84,5%</span>
+                        <span class="text-xs font-bold text-green-600">+6,2%</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-1">Resolución de búsqueda en &lt; 30 seg sin abandonar.</p>
+                </div>
+
+                <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200 border-l-4 border-l-ua-red">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Estudiantes Activos</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-3xl font-black text-ua-charcoal">412</span>
+                        <span class="text-xs font-bold text-green-600">Piloto UA</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-1">Alumnos Campus Providencia escaneando QR.</p>
+                </div>
+
+                <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200 border-l-4 border-l-blue-600">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Consultas AutónomoBot</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-3xl font-black text-blue-600">1.280</span>
+                        <span class="text-xs font-bold text-gray-500">98% precisión</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-1">Interacciones con redirección exitosa al mapa.</p>
+                </div>
+
+                <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200 border-l-4 border-l-amber-500">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Clics en Locales BAES</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-3xl font-black text-amber-600">74,0%</span>
+                        <span class="text-xs font-bold text-gray-500">Meta: 70%</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-1">Supera el 70% de demanda BAES del diagnóstico.</p>
+                </div>
+
+                <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200 border-l-4 border-l-ua-charcoal">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Ahorro Promedio / Menú</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-3xl font-black text-ua-charcoal">$2.450</span>
+                        <span class="text-xs font-bold text-green-600">CLP</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-1">Versus promedio cadenas / MUT Providencia.</p>
+                </div>
+            </div>
+
+            <!-- Gráficos Analíticos (Chart.js) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                    <h3 class="font-bold text-base text-ua-charcoal mb-1">Diagnóstico Inicial vs. Uso Real de Filtros</h3>
+                    <p class="text-xs text-gray-500 mb-4">Validación empírica de criterios de decisión alimentaria en la plataforma (%).</p>
+                    <div class="h-64">
+                        <canvas id="chart-criteria"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                    <h3 class="font-bold text-base text-ua-charcoal mb-1">Tasa de Éxito vs. Abandono (Picá Autónoma vs. Google)</h3>
+                    <p class="text-xs text-gray-500 mb-4">Evolución semanal del porcentaje de estudiantes que encuentran menú bajo $4.800.</p>
+                    <div class="h-64">
+                        <canvas id="chart-evolution"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestor Editorial de Locales y Verificación -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="font-extrabold text-lg text-ua-charcoal">Gestor Editorial de Fichas y Verificación BAES</h3>
+                        <p class="text-xs text-gray-500">Actualiza la fecha de verificación o agrega un nuevo local verificado (se reflejará inmediatamente en el mapa público).</p>
+                    </div>
+                    <button onclick="toggleNewPlaceForm()" class="bg-ua-red hover:bg-ua-redDark text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 self-start">
+                        <i class="fa-solid fa-plus"></i> Agregar Nueva Picada Verificada
+                    </button>
+                </div>
+
+                <!-- Formulario oculto para agregar nuevo local -->
+                <form id="new-place-form" onsubmit="addNewPlaceAdmin(event)" class="hidden bg-ua-neutral p-4 rounded-xl border border-gray-300 mb-5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                        <label class="font-bold block mb-1">Nombre del Local *</label>
+                        <input type="text" id="new-name" required placeholder="Ej: Picá Don Lucho" class="w-full p-2 rounded-lg border border-gray-300 bg-white">
+                    </div>
+                    <div>
+                        <label class="font-bold block mb-1">Dirección en Providencia *</label>
+                        <input type="text" id="new-address" required placeholder="Ej: Av. Ricardo Lyon 610" class="w-full p-2 rounded-lg border border-gray-300 bg-white">
+                    </div>
+                    <div>
+                        <label class="font-bold block mb-1">Precio Mínimo Menú (CLP) *</label>
+                        <input type="number" id="new-price-num" required value="3900" min="2000" max="8000" class="w-full p-2 rounded-lg border border-gray-300 bg-white">
+                    </div>
+                    <div>
+                        <label class="font-bold block mb-1">Tipo de Comida *</label>
+                        <input type="text" id="new-type" required placeholder="Ej: Colaciones Caseras" class="w-full p-2 rounded-lg border border-gray-300 bg-white">
+                    </div>
+                    <div>
+                        <label class="font-bold block mb-1">Acepta BAES / Junaeb *</label>
+                        <select id="new-baes" class="w-full p-2 rounded-lg border border-gray-300 bg-white">
+                            <option value="true">Sí - Acepta BAES</option>
+                            <option value="false">No acepta BAES</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full bg-ua-baes hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg transition">
+                            Guardar y Publicar en Mapa
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Tabla de Locales -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-gray-100 text-ua-charcoal border-b border-gray-200">
+                                <th class="p-3 font-bold">Local</th>
+                                <th class="p-3 font-bold">Precio Ref.</th>
+                                <th class="p-3 font-bold">Nota Google</th>
+                                <th class="p-3 font-bold">Estado BAES</th>
+                                <th class="p-3 font-bold">Última Verificación</th>
+                                <th class="p-3 font-bold text-right">Acción Editorial</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-places-tbody" class="divide-y divide-gray-100">
+                            <!-- Generado dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- FOOTER INSTITUCIONAL                                                  -->
+    <!-- ===================================================================== -->
+    <footer class="bg-ua-charcoal text-gray-300 border-t-4 border-ua-red mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
+                <div class="flex items-center gap-3">
+                    <span class="bg-ua-red text-white font-serif font-extrabold px-2.5 py-1 rounded text-sm">UA</span>
+                    <div>
+                        <p class="text-white font-bold text-sm">Picá Autónoma · Ruta BAES Providencia</p>
+                        <p class="text-gray-400">Proyecto de Emprendimiento Comunicacional · Carrera de Periodismo, Universidad Autónoma de Chile</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-4 text-gray-300">
+                    <span><i class="fa-solid fa-phone text-ua-red mr-1"></i> +569 63211443</span>
+                    <span><i class="fa-solid fa-envelope text-ua-red mr-1"></i> picaautonoma@gmail.com</span>
+                    <span class="text-gray-400">Duc in Altum · Más Universidad</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL / RESPONSIVE)                     -->
+    <!-- ===================================================================== -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 flex justify-around items-center py-2 px-1">
+        <button onclick="switchView('inicio')" data-nav="inicio" class="mobile-nav-btn flex flex-col items-center text-ua-red font-bold text-[11px] p-1.5">
+            <i class="fa-solid fa-house text-base mb-0.5"></i>
+            <span>Inicio</span>
+        </button>
+        <button onclick="switchView('explorador')" data-nav="explorador" class="mobile-nav-btn flex flex-col items-center text-gray-500 font-medium text-[11px] p-1.5">
+            <i class="fa-solid fa-map-location-dot text-base mb-0.5"></i>
+            <span>Mapa & Bot</span>
+        </button>
+        <button onclick="switchView('proyecto')" data-nav="proyecto" class="mobile-nav-btn flex flex-col items-center text-gray-500 font-medium text-[11px] p-1.5">
+            <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
+            <span>Proyecto</span>
+        </button>
+        <button onclick="switchView('nosotros')" data-nav="nosotros" class="mobile-nav-btn flex flex-col items-center text-gray-500 font-medium text-[11px] p-1.5">
+            <i class="fa-solid fa-users text-base mb-0.5"></i>
+            <span>Nosotros</span>
+        </button>
+        <button onclick="handleAdminAccess()" data-nav="admin" class="mobile-nav-btn flex flex-col items-center text-gray-500 font-medium text-[11px] p-1.5">
+            <i class="fa-solid fa-lock text-base mb-0.5"></i>
+            <span>Admin</span>
+        </button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL DE LOGIN PARA ADMINISTRADORES                                   -->
+    <!-- ===================================================================== -->
+    <div id="admin-login-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-t-8 border-ua-red animate-[fadeIn_0.2s_ease-out]">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-lg bg-ua-red text-white flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-lg text-ua-charcoal">Acceso Administradores</h3>
+                        <p class="text-xs text-gray-500">Panel de Métricas y Control Editorial</p>
+                    </div>
+                </div>
+                <button onclick="closeLoginModal()" class="text-gray-400 hover:text-gray-700 text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-ua-charcoal mb-1">Correo Institucional / Admin</label>
+                    <input type="email" id="admin-email" required placeholder="admin@picaautonoma.cl" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-ua-red">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-ua-charcoal mb-1">Contraseña</label>
+                    <input type="password" id="admin-pass" required placeholder="••••••" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-ua-red">
+                </div>
+
+                <div id="login-error-msg" class="hidden text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200 font-semibold">
+                    Credenciales incorrectas. Usa las credenciales de demostración indicadas abajo.
+                </div>
+
+                <button type="submit" class="w-full bg-ua-red hover:bg-ua-redDark text-white font-bold py-3 rounded-xl shadow transition text-sm">
+                    Ingresar al Dashboard de Métricas
+                </button>
+            </form>
+
+            <!-- Credenciales Demo para Evaluación Académica -->
+            <div class="mt-4 pt-3 border-t border-gray-100 bg-gray-50 p-3 rounded-xl text-xs">
+                <p class="text-gray-500 font-semibold mb-1.5">Credenciales Demo (Evaluación Académica):</p>
+                <div class="flex items-center justify-between text-gray-700 mb-2">
+                    <span>Usuario: <code class="bg-white px-1.5 py-0.5 rounded border">admin@picaautonoma.cl</code></span>
+                    <span>Clave: <code class="bg-white px-1.5 py-0.5 rounded border">UA2026</code></span>
+                </div>
+                <button type="button" onclick="quickDemoLogin()" class="w-full bg-ua-charcoal hover:bg-ua-charcoalDark text-white font-semibold py-2 rounded-lg text-xs transition">
+                    <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> Acceso Rápido Demo Evaluador
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL DE REPORTE COMUNITARIO DE FICHA                                 -->
+    <!-- ===================================================================== -->
+    <div id="report-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-t-4 border-ua-charcoal">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-extrabold text-lg text-ua-charcoal">Reportar Actualización de Ficha</h3>
+                <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-gray-600 mb-4">Ayúdanos a mantener la información verificada para toda la comunidad UA.</p>
+            <form onsubmit="submitReport(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="font-bold block mb-1">¿Qué dato cambió en este local?</label>
+                    <select class="w-full p-2.5 rounded-xl border border-gray-300 bg-white">
+                        <option>Cambio en el precio del menú</option>
+                        <option>Ya no acepta / Ahora sí acepta Junaeb BAES</option>
+                        <option>Cambio de horario de atención</option>
+                        <option>Local cerrado temporalmente</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-bold block mb-1">Detalle breve</label>
+                    <textarea rows="2" required placeholder="Ej: Hoy subió el menú ejecutivo a $4.500..." class="w-full p-2.5 rounded-xl border border-gray-300"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-ua-red text-white font-bold py-2.5 rounded-xl hover:bg-ua-redDark transition">
+                    Enviar Reporte al Equipo Editorial
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contenedor de Notificaciones Toast -->
+    <div id="toast-container"></div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT: LÓGICA DE NAVEGACIÓN, MAPA LEAFLET, CHATBOT Y ADMIN       -->
+    <!-- ===================================================================== -->
+    <script>
+        // ===================================================================
+        // 1. BASE DE DATOS VERIFICADA DE PICADAS EN PROVIDENCIA (ENTORNO UA)
+        // ===================================================================
+        // Coordenadas reales en el cuadrante Pedro de Valdivia / Ricardo Lyon / Nueva Providencia / Manuel Montt
+        const CAMPUS_UA_COORDS = { lat: -33.4268, lng: -70.6112 }; // Campus Providencia UA (Av. Pedro de Valdivia 425)
+        let userCoords = { ...CAMPUS_UA_COORDS, isRealGPS: false, label: "Campus UA Providencia (Av. Pedro de Valdivia 425)" };
+
+        let picadasDB = [
+            {
+                id: 1,
+                name: "El Bajón de Pedro de Valdivia",
+                address: "Av. Pedro de Valdivia 482, Providencia",
+                lat: -33.4276,
+                lng: -70.6116,
+                priceMin: 3800,
+                priceMax: 4500,
+                priceLabel: "$3.800 - $4.500",
+                rating: 4.8,
+                reviewsCount: 142,
+                baes: true,
+                baesDetail: "Sí - Toda la carta",
+                type: "Comida Casera / Menú",
+                speed: "Rápido (8-12 min)",
+                speedScore: 9,
+                hours: "Lun a Vie: 11:30 - 17:30 hrs",
+                phone: "+56 9 8412 3390",
+                verifiedDate: "18/11/2026",
+                description: "Colaciones caseras abundantes (cazuela, pastel de choclo, pollo arvejado con agregado) + jugo natural y pan amasado. Favorito de estudiantes UA por relación precio-cantidad."
+            },
+            {
+                id: 2,
+                name: "Donde la Tía Meche - Colaciones",
+                address: "Marchant Pereira 345, Providencia",
+                lat: -33.4254,
+                lng: -70.6135,
+                priceMin: 3500,
+                priceMax: 4200,
+                priceLabel: "$3.500 - $4.200",
+                rating: 4.9,
+                reviewsCount: 215,
+                baes: true,
+                baesDetail: "Sí - Menú del día BAES",
+                type: "Cocina Tradicional Chilena",
+                speed: "Muy Rápido (5-10 min)",
+                speedScore: 10,
+                hours: "Lun a Vie: 12:00 - 16:30 hrs",
+                phone: "+56 9 7654 1120",
+                verifiedDate: "20/11/2026",
+                description: "Picada histórica de barrio a pasos del campus. Menú diario con entrada de ensalada surtida, plato de fondo casero y postre. Atención express en hora punta."
+            },
+            {
+                id: 3,
+                name: "Sánguches & Completos Lyon",
+                address: "Av. Ricardo Lyon 512, Providencia",
+                lat: -33.4262,
+                lng: -70.6085,
+                priceMin: 2900,
+                priceMax: 4300,
+                priceLabel: "$2.900 - $4.300",
+                rating: 4.6,
+                reviewsCount: 189,
+                baes: true,
+                baesDetail: "Sí - Toda la carta",
+                type: "Fuente de Soda / Sánguches",
+                speed: "Express (5-8 min)",
+                speedScore: 10,
+                hours: "Lun a Sáb: 10:30 - 20:30 hrs",
+                phone: "+56 9 9123 4455",
+                verifiedDate: "19/11/2026",
+                description: "Promociones estudiantiles de churrascos, barros luco y completos italianos gigantes con bebida o té. Ideal para ventanas cortas entre clases."
+            },
+            {
+                id: 4,
+                name: "Picá El Rincón de Guardia Vieja",
+                address: "Guardia Vieja 255, Providencia",
+                lat: -33.4242,
+                lng: -70.6102,
+                priceMin: 4000,
+                priceMax: 4800,
+                priceLabel: "$4.000 - $4.800",
+                rating: 4.7,
+                reviewsCount: 98,
+                baes: true,
+                baesDetail: "Sí - Toda la carta",
+                type: "Almuerzos & Pastas",
+                speed: "Normal (12-15 min)",
+                speedScore: 7,
+                hours: "Lun a Vie: 12:00 - 18:00 hrs",
+                phone: "+56 9 6543 8877",
+                verifiedDate: "15/11/2026",
+                description: "Platos de pastas artesanales, lasaña casera y opciones vegetarianas reales con pago 100% Junaeb/BAES y Wi-Fi gratuito para estudiantes."
+            },
+            {
+                id: 5,
+                name: "Almuerzos Caseros Manuel Montt",
+                address: "Av. Manuel Montt 410, Providencia",
+                lat: -33.4285,
+                lng: -70.6168,
+                priceMin: 3600,
+                priceMax: 4400,
+                priceLabel: "$3.600 - $4.400",
+                rating: 4.5,
+                reviewsCount: 130,
+                baes: true,
+                baesDetail: "Sí - Solo menú del día",
+                type: "Menú Ejecutivo Económico",
+                speed: "Rápido (10 min)",
+                speedScore: 8,
+                hours: "Lun a Vie: 12:00 - 16:00 hrs",
+                phone: "+56 9 5544 2211",
+                verifiedDate: "17/11/2026",
+                description: "Tres alternativas diarias de fondo (carne, pollo o legumbres) con consomé de entrada. Ambiente tranquilo y precios congelados para universitarios."
+            },
+            {
+                id: 6,
+                name: "Empanadas y Fajitas El Estudiante",
+                address: "Av. Nueva Providencia 2140, Providencia",
+                lat: -33.4231,
+                lng: -70.6119,
+                priceMin: 2500,
+                priceMax: 3900,
+                priceLabel: "$2.500 - $3.900",
+                rating: 4.6,
+                reviewsCount: 164,
+                baes: true,
+                baesDetail: "Sí - Toda la carta",
+                type: "Comida al Paso / Wraps",
+                speed: "Express (4-7 min)",
+                speedScore: 10,
+                hours: "Lun a Vie: 09:30 - 19:30 hrs",
+                phone: "+56 9 4321 9988",
+                verifiedDate: "20/11/2026",
+                description: "Empanadas de horno recién salidas, fajitas XL de pollo/carne/falafel y jugos naturales. La opción más económica y rápida del sector."
+            },
+            {
+                id: 7,
+                name: "Casino Popular La Autónoma",
+                address: "Carlos Antúnez 1920, Providencia",
+                lat: -33.4292,
+                lng: -70.6098,
+                priceMin: 3700,
+                priceMax: 4500,
+                priceLabel: "$3.700 - $4.500",
+                rating: 4.8,
+                reviewsCount: 176,
+                baes: true,
+                baesDetail: "Sí - Toda la carta",
+                type: "Casino Estudiantil",
+                speed: "Rápido (8 min)",
+                speedScore: 9,
+                hours: "Lun a Vie: 11:45 - 17:00 hrs",
+                phone: "+56 9 8877 6655",
+                verifiedDate: "21/11/2026",
+                description: "A solo 3 cuadras del campus. Amplio comedor, microondas disponibles y menú estudiantil con proteína, acompañamiento, ensalada y postre."
+            },
+            {
+                id: 8,
+                name: "Wok & Bowl Económico Providencia",
+                address: "Av. Providencia 1985, Local 14",
+                lat: -33.4248,
+                lng: -70.6148,
+                priceMin: 4200,
+                priceMax: 4900,
+                priceLabel: "$4.200 - $4.900",
+                rating: 4.4,
+                reviewsCount: 87,
+                baes: false,
+                baesDetail: "No acepta BAES (Solo Débito/Efectivo)",
+                type: "Bowls & Salteados",
+                speed: "Rápido (10 min)",
+                speedScore: 8,
+                hours: "Lun a Sáb: 12:00 - 20:00 hrs",
+                phone: "+56 9 3322 1100",
+                verifiedDate: "14/11/2026",
+                description: "Bowls de arroz o fideos salteados con vegetales frescos y pollo teriyaki. Aunque no acepta BAES, ofrece 15% de descuento mostrando credencial TUI UA."
+            },
+            {
+                id: 9,
+                name: "Fuente de Soda La Esquina",
+                address: "General Flores 180, Providencia",
+                lat: -33.4271,
+                lng: -70.6152,
+                priceMin: 3400,
+                priceMax: 4100,
+                priceLabel: "$3.400 - $4.100",
+                rating: 4.3,
+                reviewsCount: 112,
+                baes: false,
+                baesDetail: "No acepta BAES (Solo Efectivo/Transferencia)",
+                type: "Picada Tradicional",
+                speed: "Rápido (9 min)",
+                speedScore: 9,
+                hours: "Lun a Vie: 11:30 - 17:00 hrs",
+                phone: "+56 9 2211 3344",
+                verifiedDate: "16/11/2026",
+                description: "Clásica fuente de soda de barrio con platos contundentes como chorrillana individual, milanesa con puré y legumbres caseras a precios populares."
+            },
+            {
+                id: 10,
+                name: "Menú Ejecutivo Express Nueva Providencia",
+                address: "Av. Nueva Providencia 2260, Galería",
+                lat: -33.4225,
+                lng: -70.6088,
+                priceMin: 4100,
+                priceMax: 4700,
+                priceLabel: "$4.100 - $4.700",
+                rating: 4.7,
+                reviewsCount: 151,
+                baes: true,
+                baesDetail: "Sí - Toda la carta",
+                type: "Almuerzo Balanceado",
+                speed: "Rápido (10 min)",
+                speedScore: 8,
+                hours: "Lun a Vie: 12:00 - 17:00 hrs",
+                phone: "+56 9 7788 9900",
+                verifiedDate: "20/11/2026",
+                description: "Opciones saludables y caseras con pechuga a la plancha, pescado al horno o tortilla de verduras, incluyendo sopa del día y pago rápido con app BAES."
+            }
+        ];
+
+        // ===================================================================
+        // 2. NAVEGACIÓN ENTRE VISTAS INDEPENDIENTES
+        // ===================================================================
+        let isAdminAuthenticated = false;
+        let mapInitialized = false;
+        let chartsInitialized = false;
+
+        function switchView(viewName) {
+            // Verificar acceso a vista admin
+            if (viewName === 'admin' && !isAdminAuthenticated) {
+                openLoginModal();
+                return;
+            }
+
+            // Ocultar todas las vistas
+            document.querySelectorAll('.view-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+
+            // Mostrar vista seleccionada
+            const target = document.getElementById(`view-${viewName}`);
+            if (target) {
+                target.classList.add('active');
+            }
+
+            // Actualizar estilos botones desktop
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.nav === viewName) {
+                    btn.classList.add('bg-ua-red', 'text-white', 'shadow-sm');
+                    btn.classList.remove('text-ua-charcoal', 'hover:bg-ua-neutral');
+                } else {
+                    btn.classList.remove('bg-ua-red', 'text-white', 'shadow-sm');
+                    btn.classList.add('text-ua-charcoal', 'hover:bg-ua-neutral');
+                }
+            });
+
+            // Actualizar estilos botones móvil
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                if (btn.dataset.nav === viewName) {
+                    btn.classList.add('text-ua-red', 'font-bold');
+                    btn.classList.remove('text-gray-500', 'font-medium');
+                } else {
+                    btn.classList.remove('text-ua-red', 'font-bold');
+                    btn.classList.add('text-gray-500', 'font-medium');
+                }
+            });
+
+            // Inicializar Mapa Leaflet cuando se entra por primera vez a Explorador
+            if (viewName === 'explorador') {
+                setTimeout(() => {
+                    if (!mapInitialized) {
+                        initProvidenciaMap();
+                    } else {
+                        map.invalidateSize();
+                    }
+                }, 100);
+            }
+
+            // Inicializar Gráficos Chart.js cuando se entra a Admin
+            if (viewName === 'admin') {
+                renderAdminTable();
+                setTimeout(() => {
+                    if (!chartsInitialized) {
+                        initAdminCharts();
+                    }
+                }, 100);
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ===================================================================
+        // 3. MAPA INTERACTIVO LEAFLET.JS + GEOLOCALIZACIÓN REAL / SIMULADA
+        // ===================================================================
+        let map;
+        let markersLayer;
+        let userMarker;
+        let routeLine;
+        let markerInstances = {};
+        let currentFilter = 'all';
+
+        // Cálculo de distancia Haversine en metros
+        function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Radio de la Tierra en metros
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return Math.round(R * c);
+        }
+
+        function formatWalkingTime(meters) {
+            const mins = Math.max(1, Math.round(meters / 80)); // ~80m por minuto caminando
+            return `${meters} m (${mins} min)`;
+        }
+
+        function initProvidenciaMap() {
+            map = L.map('providencia-map').setView([userCoords.lat, userCoords.lng], 15);
+
+            // Teselas limpias de CartoDB Positron / OpenStreetMap
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO | Picá Autónoma UA',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            markersLayer = L.layerGroup().addTo(map);
+            renderUserMarker();
+            renderMapMarkers('all');
+            selectPlaceDetail(picadasDB[0]);
+            mapInitialized = true;
+        }
+
+        function renderUserMarker() {
+            if (!map) return;
+            if (userMarker) map.removeLayer(userMarker);
+
+            const userIcon = L.divIcon({
+                className: 'custom-user-icon',
+                html: `<div style="background:#3D3935; color:white; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:3px solid #D52B1E; box-shadow:0 4px 10px rgba(0,0,0,0.35); font-weight:800; font-size:11px;">UA</div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
+
+            userMarker = L.marker([userCoords.lat, userCoords.lng], { icon: userIcon })
+                .addTo(map)
+                .bindPopup(`<strong>Tu Ubicación Actual</strong><br><span style="font-size:12px;">${userCoords.label}</span>`);
+        }
+
+        function renderMapMarkers(filterType) {
+            if (!markersLayer) return;
+            markersLayer.clearLayers();
+            markerInstances = {};
+
+            const filtered = picadasDB.filter(place => {
+                const dist = calculateDistanceMeters(userCoords.lat, userCoords.lng, place.lat, place.lng);
+                if (filterType === 'baes') return place.baes === true;
+                if (filterType === 'cheap') return place.priceMin < 4000;
+                if (filterType === 'near') return dist <= 400; // < 5 min caminando
+                return true;
+            });
+
+            document.getElementById('locales-count-badge').textContent = `${filtered.length} locales`;
+
+            filtered.forEach(place => {
+                const dist = calculateDistanceMeters(userCoords.lat, userCoords.lng, place.lat, place.lng);
+                const pinColor = place.baes ? '#15803D' : '#D52B1E';
+
+                const iconHtml = `
+                    <div id="pin-el-${place.id}" style="background:${pinColor}; color:white; width:34px; height:34px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; border:2.5px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.35);">
+                        <i class="fa-solid fa-utensils" style="transform:rotate(45deg); font-size:13px;"></i>
+                    </div>
+                `;
+
+                const customIcon = L.divIcon({
+                    className: 'picada-pin',
+                    html: iconHtml,
+                    iconSize: [34, 34],
+                    iconAnchor: [17, 34],
+                    popupAnchor: [0, -34]
+                });
+
+                const popupContent = `
+                    <div style="min-width:210px; font-family:'Inter',sans-serif;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <span style="background:${place.baes ? '#DCFCE7' : '#FCEAEA'}; color:${place.baes ? '#15803D' : '#D52B1E'}; font-size:10px; font-weight:800; padding:2px 6px; border-radius:99px;">
+                                ${place.baes ? '✓ Acepta BAES' : 'Sin BAES'}
+                            </span>
+                            <span style="font-size:11px; font-weight:700; color:#D97706;">${place.rating} ★</span>
+                        </div>
+                        <h4 style="margin:0; font-size:14px; font-weight:800; color:#3D3935;">${place.name}</h4>
+                        <p style="margin:2px 0 6px; font-size:11px; color:#666;">${place.address}</p>
+                        <div style="background:#F4F4F4; padding:6px 8px; border-radius:6px; font-size:11px; margin-bottom:6px;">
+                            <div><strong>Precio:</strong> <span style="color:#D52B1E; font-weight:700;">${place.priceLabel}</span></div>
+                            <div><strong>Distancia:</strong> ${formatWalkingTime(dist)}</div>
+                            <div><strong>Tipo:</strong> ${place.type}</div>
+                        </div>
+                        <div style="font-size:10px; color:#555;">Tel: ${place.phone}</div>
+                    </div>
+                `;
+
+                const marker = L.marker([place.lat, place.lng], { icon: customIcon })
+                    .bindPopup(popupContent)
+                    .on('click', () => {
+                        selectPlaceDetail(place);
+                        drawRouteToPlace(place);
+                    });
+
+                marker.addTo(markersLayer);
+                markerInstances[place.id] = marker;
+            });
+        }
+
+        function filterMapPlaces(filterType) {
+            currentFilter = filterType;
+            document.querySelectorAll('.filter-chip').forEach(btn => {
+                if (btn.dataset.filter === filterType) {
+                    btn.classList.add('bg-ua-red', 'font-bold');
+                    btn.classList.remove('bg-white/10', 'font-semibold');
+                } else {
+                    btn.classList.remove('bg-ua-red', 'font-bold');
+                    btn.classList.add('bg-white/10', 'font-semibold');
+                }
+            });
+            renderMapMarkers(filterType);
+        }
+
+        function selectPlaceDetail(place) {
+            const dist = calculateDistanceMeters(userCoords.lat, userCoords.lng, place.lat, place.lng);
+            
+            document.getElementById('detail-name').textContent = place.name;
+            document.getElementById('detail-address').innerHTML = `<i class="fa-solid fa-location-dot text-ua-red"></i> ${place.address}`;
+            document.getElementById('detail-price').textContent = place.priceLabel;
+            document.getElementById('detail-rating').textContent = `${place.rating} ★ en Google (${place.reviewsCount})`;
+            document.getElementById('detail-distance').innerHTML = `<i class="fa-solid fa-person-walking mr-1 text-ua-red"></i>${formatWalkingTime(dist)}`;
+            document.getElementById('detail-desc').textContent = place.description;
+            document.getElementById('detail-type').innerHTML = `<i class="fa-solid fa-bowl-food mr-1 text-ua-red"></i>${place.type}`;
+            document.getElementById('detail-speed').innerHTML = `<i class="fa-solid fa-stopwatch mr-1"></i>${place.speed}`;
+            document.getElementById('detail-hours').textContent = place.hours;
+            document.getElementById('detail-phone').textContent = place.phone;
+            document.getElementById('detail-verified').textContent = place.verifiedDate;
+
+            const baesBadge = document.getElementById('detail-badge-baes');
+            if (place.baes) {
+                baesBadge.className = "bg-ua-baesLight text-ua-baes text-xs font-bold px-2.5 py-0.5 rounded-full border border-green-300";
+                baesBadge.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i>${place.baesDetail}`;
+            } else {
+                baesBadge.className = "bg-ua-redLight text-ua-red text-xs font-bold px-2.5 py-0.5 rounded-full border border-red-200";
+                baesBadge.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i>${place.baesDetail}`;
+            }
+        }
+
+        function drawRouteToPlace(place) {
+            if (!map) return;
+            if (routeLine) map.removeLayer(routeLine);
+
+            routeLine = L.polyline([
+                [userCoords.lat, userCoords.lng],
+                [place.lat, place.lng]
+            ], {
+                color: '#D52B1E',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '8, 8'
+            }).addTo(map);
+        }
+
+        // Animación de vuelo directo en el mapa desde el Chatbot
+        function focusPlaceOnMap(placeId) {
+            const place = picadasDB.find(p => p.id === placeId);
+            if (!place) return;
+
+            // Asegurarnos de mostrar todos los filtros para que el marcador sea visible
+            if (currentFilter !== 'all') {
+                filterMapPlaces('all');
+            }
+
+            selectPlaceDetail(place);
+            drawRouteToPlace(place);
+
+            if (map) {
+                map.flyTo([place.lat, place.lng], 17, {
+                    animate: true,
+                    duration: 1.8
+                });
+
+                setTimeout(() => {
+                    const marker = markerInstances[place.id];
+                    if (marker) {
+                        marker.openPopup();
+                    }
+                    const pinEl = document.getElementById(`pin-el-${place.id}`);
+                    if (pinEl) {
+                        pinEl.classList.add('marker-highlight');
+                        setTimeout(() => pinEl.classList.remove('marker-highlight'), 4500);
+                    }
+                }, 1850);
+            }
+
+            // Resaltar tarjeta de detalle
+            const card = document.getElementById('selected-place-card');
+            card.classList.add('ring-2', 'ring-ua-red');
+            setTimeout(() => card.classList.remove('ring-2', 'ring-ua-red'), 3000);
+        }
+
+        // Solicitar ubicación GPS real al navegador
+        function requestRealLocation() {
+            const badge = document.getElementById('geo-status-badge');
+            badge.className = "text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800";
+            badge.textContent = "Obteniendo GPS...";
+
+            if (!navigator.geolocation) {
+                showToast("Tu navegador no soporta geolocalización. Usando Campus UA Providencia.", "warning");
+                simulateCampusLocation();
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userCoords = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        isRealGPS: true,
+                        label: "Tu Ubicación GPS Real"
+                    };
+                    badge.className = "text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800";
+                    badge.innerHTML = `<i class="fa-solid fa-check mr-1"></i>GPS Activo`;
+
+                    if (map) {
+                        renderUserMarker();
+                        renderMapMarkers(currentFilter);
+                        map.flyTo([userCoords.lat, userCoords.lng], 15, { animate: true, duration: 1.2 });
+                    }
+                    showToast("Ubicación GPS activada. Distancias recalculadas en tiempo real.", "success");
+                },
+                (error) => {
+                    showToast("Permiso denegado o no disponible. Ubicado en Campus UA Providencia.", "warning");
+                    simulateCampusLocation();
+                },
+                { enableHighAccuracy: true, timeout: 7000 }
+            );
+        }
+
+        function simulateCampusLocation() {
+            userCoords = {
+                ...CAMPUS_UA_COORDS,
+                isRealGPS: false,
+                label: "Campus UA Providencia (Av. Pedro de Valdivia 425)"
+            };
+            const badge = document.getElementById('geo-status-badge');
+            badge.className = "text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800";
+            badge.innerHTML = `<i class="fa-solid fa-university mr-1"></i>Campus UA Providencia`;
+
+            if (map) {
+                renderUserMarker();
+                renderMapMarkers(currentFilter);
+                map.flyTo([userCoords.lat, userCoords.lng], 15, { animate: true, duration: 1.2 });
+            }
+            showToast("Ubicación establecida en Campus UA Providencia (Pedro de Valdivia 425).", "info");
+        }
+
+        // ===================================================================
+        // 4. CHATBOT ESPECIALIZADO: AUTÓNOMOBOT (CONECTADO AL MAPA)
+        // ===================================================================
+        function sendSuggestedQuery(text) {
+            document.getElementById('chat-input').value = text;
+            handleChatSubmit(new Event('submit'));
+        }
+
+        function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const userText = input.value.trim();
+            if (!userText) return;
+
+            appendChatMessage('user', userText);
+            input.value = '';
+
+            // Simular pequeño tiempo de procesamiento inteligente
+            setTimeout(() => {
+                const botReply = generateAutonomoBotResponse(userText);
+                appendChatMessage('bot', botReply.html, botReply.recommendedPlaceId);
+                
+                // Si hay una recomendación ganadora, animar automáticamente el mapa hacia ese local
+                if (botReply.recommendedPlaceId) {
+                    focusPlaceOnMap(botReply.recommendedPlaceId);
+                }
+            }, 450);
+        }
+
+        function appendChatMessage(sender, htmlContent, placeId = null) {
+            const container = document.getElementById('chat-messages');
+            const wrapper = document.createElement('div');
+
+            if (sender === 'user') {
+                wrapper.className = "flex justify-end";
+                wrapper.innerHTML = `
+                    <div class="bg-ua-charcoal text-white rounded-2xl rounded-tr-none px-4 py-2.5 text-sm shadow-sm max-w-[85%]">
+                        ${escapeHtml(htmlContent)}
+                    </div>
+                `;
+            } else {
+                wrapper.className = "flex items-start gap-2.5";
+                const mapBtnHtml = placeId ? `
+                    <button onclick="focusPlaceOnMap(${placeId})" class="mt-2.5 w-full bg-ua-red hover:bg-ua-redDark text-white text-xs font-bold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-location-arrow"></i> Centrar y animar en el mapa
+                    </button>
+                ` : '';
+
+                wrapper.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-ua-red text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">
+                        UA
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-none p-3.5 shadow-sm text-sm text-ua-charcoal max-w-[88%]">
+                        ${htmlContent}
+                        ${mapBtnHtml}
+                    </div>
+                `;
+            }
+
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function generateAutonomoBotResponse(rawQuery) {
+            const q = rawQuery.toLowerCase();
+
+            // 1. Guardrail estricto de dominio: solo hablar de alimentación económica en Providencia / UA / BAES
+            const domainKeywords = [
+                'comer', 'almorzar', 'almuerzo', 'comida', 'local', 'locales', 'picada', 'picadas',
+                'barato', 'económico', 'economico', 'precio', 'presupuesto', 'lucas', 'plata', '$',
+                'baes', 'junaeb', 'tarjeta', 'saldo', 'cerca', 'distancia', 'ubicación', 'ubicacion',
+                'valoración', 'valoracion', 'nota', 'mejor', 'recomienda', 'recomiéndame', 'hambre',
+                'casera', 'rápido', 'rapido', 'sánguche', 'sanguche', 'completo', 'empanada', 'menú', 'menu', 'hola', 'buenas'
+            ];
+
+            const isRelevant = domainKeywords.some(kw => q.includes(kw));
+
+            if (!isRelevant) {
+                return {
+                    html: `
+                        <p class="text-xs sm:text-sm">Lo siento, mi entrenamiento es exclusivo para orientar a estudiantes de la <strong>Universidad Autónoma</strong> sobre <strong>locales económicos, precios, cercanía y uso de BAES/Junaeb en Providencia</strong>.</p>
+                        <p class="text-xs text-gray-500 mt-1.5">Prueba preguntarme: <em>"¿Cuál es el mejor local por precio, distancia y nota?"</em> o <em>"¿Dónde almorzar con Junaeb cerca?"</em>.</p>
+                    `,
+                    recommendedPlaceId: null
+                };
+            }
+
+            if (q === 'hola' || q === 'buenas' || q === 'hola!' ) {
+                return {
+                    html: `<p class="text-xs sm:text-sm">¡Hola! ¿Buscas dónde almorzar cerca de la UA Providencia hoy? Dime si necesitas pagar con <strong>BAES</strong>, tu presupuesto aproximado o si quieres la <strong>mejor opción general</strong>.</p>`,
+                    recommendedPlaceId: null
+                };
+            }
+
+            // 2. Filtrado y Puntaje Ponderado según criterios del informe (Precio, Cercanía, BAES, Valoración)
+            const requireBaes = q.includes('baes') || q.includes('junaeb') || q.includes('tarjeta');
+            const requireFast = q.includes('rápido') || q.includes('rapido') || q.includes('poco tiempo') || q.includes('express') || q.includes('ventana');
+            const requireCasera = q.includes('casera') || q.includes('cazuela') || q.includes('colación') || q.includes('colacion');
+
+            // Extraer presupuesto si menciona monto (ej: 4000)
+            let maxBudget = 5500;
+            const numMatch = q.match(/(\d{4})/);
+            if (numMatch) {
+                maxBudget = parseInt(numMatch[1], 10);
+            } else if (q.includes('barato') || q.includes('económico') || q.includes('economico')) {
+                maxBudget = 4200;
+            }
+
+            let candidates = picadasDB.map(place => {
+                const dist = calculateDistanceMeters(userCoords.lat, userCoords.lng, place.lat, place.lng);
+                
+                // Puntajes normalizados (0 a 100)
+                const priceScore = Math.max(0, 100 - ((place.priceMin - 2500) / 25)); // Más barato = mayor puntaje
+                const distScore = Math.max(0, 100 - (dist / 8)); // Más cerca = mayor puntaje
+                const ratingScore = (place.rating / 5) * 100; // Nota Google
+                const baesScore = place.baes ? 100 : 20;
+                const speedBonus = requireFast ? (place.speedScore * 5) : 0;
+                const caseraBonus = (requireCasera && place.type.toLowerCase().includes('casera')) ? 25 : 0;
+
+                // Ponderación alineada al informe (Presupuesto 35%, Cercanía 30%, Valoración 20%, BAES 15%)
+                let totalScore = (priceScore * 0.35) + (distScore * 0.30) + (ratingScore * 0.20) + (baesScore * 0.15) + speedBonus + caseraBonus;
+
+                // Penalizaciones si no cumple restricción explícita
+                if (requireBaes && !place.baes) totalScore -= 80;
+                if (place.priceMin > maxBudget) totalScore -= 50;
+
+                return { ...place, dist, totalScore };
+            });
+
+            candidates.sort((a, b) => b.totalScore - a.totalScore);
+            const winner = candidates[0];
+            const runnerUp = candidates[1];
+
+            const html = `
+                <div class="space-y-2 text-xs sm:text-sm">
+                    <p>Analizando tu ubicación actual, precios verificados y valoración en Google, la <strong>mejor opción para ti</strong> es:</p>
+                    <div class="bg-ua-neutral p-3 rounded-xl border-l-4 border-ua-red">
+                        <div class="flex justify-between items-center">
+                            <span class="font-extrabold text-ua-charcoal text-sm">🏆 ${winner.name}</span>
+                            <span class="text-xs font-bold text-amber-600">${winner.rating} ★</span>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-0.5">${winner.address}</p>
+                        <div class="grid grid-cols-2 gap-1.5 mt-2 text-xs">
+                            <span class="bg-white px-2 py-1 rounded border border-gray-200 font-semibold text-ua-red">💰 ${winner.priceLabel}</span>
+                            <span class="bg-white px-2 py-1 rounded border border-gray-200 font-semibold text-ua-charcoal">🚶 ${formatWalkingTime(winner.dist)}</span>
+                        </div>
+                        <p class="text-[11px] font-bold mt-1.5 ${winner.baes ? 'text-ua-baes' : 'text-red-600'}">
+                            ${winner.baes ? '✓ ' + winner.baesDetail : '✕ ' + winner.baesDetail}
+                        </p>
+                    </div>
+                    <p class="text-xs text-gray-600">
+                        <strong>Segunda alternativa:</strong> ${runnerUp.name} (${runnerUp.priceLabel}, a ${formatWalkingTime(runnerUp.dist)}, ${runnerUp.rating} ★).
+                    </p>
+                </div>
+            `;
+
+            return {
+                html,
+                recommendedPlaceId: winner.id
+            };
+        }
+
+        function resetChat() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-ua-red text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">UA</div>
+                    <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-none p-3.5 shadow-sm text-sm text-ua-charcoal max-w-[88%]">
+                        Conversación reiniciada. Pregúntame por precios, cercanía o locales con Junaeb/BAES en Providencia.
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===================================================================
+        // 5. DATOS INTERACTIVOS DE LAS 5 FUERZAS DE PORTER (VISTA PROYECTO)
+        // ===================================================================
+        const porterData = [
+            {
+                title: "1. Rivalidad entre Competidores Existentes — ALTA",
+                diagnosis: "El usuario ya dispone de Google Search, Google Maps, redes sociales y plataformas de delivery. Estos competidores poseen hábitos instalados, infraestructura masiva y reseñas, aunque sus algoritmos priorizan grandes cadenas comerciales.",
+                strategy: "Diferenciación por hiper-localización territorial (entorno Campus Providencia UA) y curaduría especializada: solo publicamos locales verificados con rango económico, distancia caminable y filtro real de BAES."
+            },
+            {
+                title: "2. Amenaza de Nuevos Entrantes — MODERADA",
+                diagnosis: "Crear un directorio básico o cuenta de Instagram tiene bajo costo técnico; un centro de estudiantes u otro emprendimiento podría replicar una guía simple.",
+                strategy: "Nuestra barrera de entrada radica en la confiabilidad editorial: protocolos de verificación en terreno con fecha visible, vínculo directo con locatarios independientes y validación comunitaria."
+            },
+            {
+                title: "3. Poder de Negociación de los Compradores (Estudiantes) — ALTO",
+                diagnosis: "Los estudiantes tienen presupuesto restringido (segmentos C2-C3), cero costo por cambiar de canal y baja tolerancia si encuentran precios desactualizados o locales cerrados.",
+                strategy: "Acceso 100% gratuito, búsqueda resuelta en menos de 30 segundos, fichas comparables y botón directo de reporte comunitario para corregir errores al instante."
+            },
+            {
+                title: "4. Poder de Negociación de los Proveedores (Locales) — MODERADO",
+                diagnosis: "Los pequeños restaurantes tienen bajo poder individual, pero el proyecto necesita sus datos actualizados (menús, horarios, aceptación BAES) y evitar depender de APIs costosas.",
+                strategy: "Uso de cartografía abierta (OpenStreetMap/Leaflet) y validación híbrida (comprobación directa del equipo + reportes de estudiantes), sin permitir que ningún local pague por alterar el orden."
+            },
+            {
+                title: "5. Amenaza de Sustitutos — ALTA",
+                diagnosis: "El sustituto más fuerte es traer comida desde casa, preguntar a un compañero en el pasillo o hacer una búsqueda rápida en Google.",
+                strategy: "Superar la combinación 'búsqueda rápida + recomendación de pares' integrando ambos en una sola pantalla: mapa geolocalizado + asistente AutónomoBot con datos verificados."
+            }
+        ];
+
+        function selectPorter(index) {
+            document.querySelectorAll('.porter-tab').forEach((btn, idx) => {
+                if (idx === index) {
+                    btn.classList.add('border-ua-red', 'bg-ua-redLight');
+                    btn.classList.remove('border-gray-200', 'bg-gray-50');
+                } else {
+                    btn.classList.remove('border-ua-red', 'bg-ua-redLight');
+                    btn.classList.add('border-gray-200', 'bg-gray-50');
+                }
+            });
+
+            const item = porterData[index];
+            document.getElementById('porter-detail-box').innerHTML = `
+                <h3 class="font-extrabold text-base text-ua-charcoal mb-2">${item.title}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+                    <div class="bg-white p-3.5 rounded-lg border border-gray-200">
+                        <span class="text-[11px] font-bold uppercase text-gray-400 block mb-1">Diagnóstico del Entorno</span>
+                        <p class="text-gray-700 leading-relaxed">${item.diagnosis}</p>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-lg border-l-4 border-ua-red">
+                        <span class="text-[11px] font-bold uppercase text-ua-red block mb-1">Respuesta Estratégica Picá Autónoma</span>
+                        <p class="text-gray-700 leading-relaxed">${item.strategy}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===================================================================
+        // 6. PANEL DE ADMINISTRACIÓN (AUTENTICACIÓN, GRÁFICOS Y GESTIÓN)
+        // ===================================================================
+        function handleAdminAccess() {
+            if (isAdminAuthenticated) {
+                switchView('admin');
+            } else {
+                openLoginModal();
+            }
+        }
+
+        function openLoginModal() {
+            const modal = document.getElementById('admin-login-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeLoginModal() {
+            const modal = document.getElementById('admin-login-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('login-error-msg').classList.add('hidden');
+        }
+
+        function submitAdminLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('admin-email').value.trim();
+            const pass = document.getElementById('admin-pass').value.trim();
+
+            if (email === 'admin@picaautonoma.cl' && pass === 'UA2026') {
+                completeAdminLogin();
+            } else {
+                document.getElementById('login-error-msg').classList.remove('hidden');
+            }
+        }
+
+        function quickDemoLogin() {
+            document.getElementById('admin-email').value = 'admin@picaautonoma.cl';
+            document.getElementById('admin-pass').value = 'UA2026';
+            completeAdminLogin();
+        }
+
+        function completeAdminLogin() {
+            isAdminAuthenticated = true;
+            closeLoginModal();
+            document.getElementById('admin-lock-icon').className = "fa-solid fa-unlock text-green-400";
+            document.getElementById('admin-btn-text').textContent = "Panel Admin";
+            showToast("Bienvenido al Panel de Administración y Métricas UA.", "success");
+            switchView('admin');
+        }
+
+        function logoutAdmin() {
+            isAdminAuthenticated = false;
+            document.getElementById('admin-lock-icon').className = "fa-solid fa-lock text-ua-red";
+            document.getElementById('admin-btn-text').textContent = "Acceso Admin";
+            showToast("Sesión de administrador cerrada.", "info");
+            switchView('inicio');
+        }
+
+        function initAdminCharts() {
+            // Gráfico 1: Criterios Diagnóstico vs Uso Real
+            const ctx1 = document.getElementById('chart-criteria').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Presupuesto', 'Cercanía Campus', 'Pago BAES', 'Sabor / Nota', 'Rapidez'],
+                    datasets: [
+                        {
+                            label: 'Diagnóstico Encuesta (%)',
+                            data: [80, 80, 70, 60, 40],
+                            backgroundColor: '#3D3935',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Filtros Activos en Pweb (%)',
+                            data: [85, 78, 74, 64, 48],
+                            backgroundColor: '#D52B1E',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            // Gráfico 2: Evolución Semanal de Éxito
+            const ctx2 = document.getElementById('chart-evolution').getContext('2d');
+            new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6'],
+                    datasets: [
+                        {
+                            label: 'Éxito Picá Autónoma (%)',
+                            data: [68, 73, 77, 80, 82.5, 84.5],
+                            borderColor: '#15803D',
+                            backgroundColor: 'rgba(21, 128, 61, 0.1)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 3
+                        },
+                        {
+                            label: 'Búsqueda Tradicional Google (%)',
+                            data: [36, 35, 37, 36, 35, 36],
+                            borderColor: '#9CA3AF',
+                            borderDash: [5, 5],
+                            tension: 0.2,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            chartsInitialized = true;
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-places-tbody');
+            tbody.innerHTML = picadasDB.map(place => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3">
+                        <div class="font-bold text-ua-charcoal">${place.name}</div>
+                        <div class="text-[11px] text-gray-500">${place.address}</div>
+                    </td>
+                    <td class="p-3 font-bold text-ua-red">${place.priceLabel}</td>
+                    <td class="p-3 font-semibold text-amber-600">${place.rating} ★</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${place.baes ? 'bg-ua-baesLight text-ua-baes' : 'bg-gray-100 text-gray-600'}">
+                            ${place.baes ? 'Acepta BAES' : 'Sin BAES'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-gray-600 font-medium">${place.verifiedDate}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="reverifyPlace(${place.id})" class="bg-ua-charcoal hover:bg-ua-red text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg transition">
+                            <i class="fa-solid fa-check mr-1"></i>Re-verificar Hoy
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function reverifyPlace(id) {
+            const place = picadasDB.find(p => p.id === id);
+            if (!place) return;
+            const today = new Date().toLocaleDateString('es-CL');
+            place.verifiedDate = today;
+            renderAdminTable();
+            showToast(`Ficha "${place.name}" verificada con fecha ${today}.`, "success");
+        }
+
+        function toggleNewPlaceForm() {
+            const form = document.getElementById('new-place-form');
+            form.classList.toggle('hidden');
+        }
+
+        function addNewPlaceAdmin(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-name').value.trim();
+            const address = document.getElementById('new-address').value.trim();
+            const priceMin = parseInt(document.getElementById('new-price-num').value, 10);
+            const type = document.getElementById('new-type').value.trim();
+            const baes = document.getElementById('new-baes').value === 'true';
+
+            // Generar coordenada realista cercana al Campus Providencia
+            const offsetLat = (Math.random() - 0.5) * 0.005;
+            const offsetLng = (Math.random() - 0.5) * 0.005;
+
+            const newPlace = {
+                id: picadasDB.length + 1,
+                name,
+                address,
+                lat: CAMPUS_UA_COORDS.lat + offsetLat,
+                lng: CAMPUS_UA_COORDS.lng + offsetLng,
+                priceMin,
+                priceMax: priceMin + 700,
+                priceLabel: `$${priceMin.toLocaleString('es-CL')} - $${(priceMin + 700).toLocaleString('es-CL')}`,
+                rating: 4.7,
+                reviewsCount: 15,
+                baes,
+                baesDetail: baes ? "Sí - Toda la carta" : "No acepta BAES",
+                type,
+                speed: "Rápido (10 min)",
+                speedScore: 9,
+                hours: "Lun a Vie: 12:00 - 17:30 hrs",
+                phone: "+56 9 6321 1443",
+                verifiedDate: new Date().toLocaleDateString('es-CL'),
+                description: `Local verificado por el equipo editorial de Picá Autónoma en ${address}. Alternativa económica para estudiantes UA.`
+            };
+
+            picadasDB.unshift(newPlace);
+            renderAdminTable();
+            if (mapInitialized) {
+                renderMapMarkers(currentFilter);
+            }
+            e.target.reset();
+            toggleNewPlaceForm();
+            showToast(`"${name}" agregado y publicado en el mapa interactivo.`, "success");
+        }
+
+        // ===================================================================
+        // 7. UTILIDADES (MODALES, TOASTS Y SANITIZACIÓN)
+        // ===================================================================
+        function openReportModal() {
+            const modal = document.getElementById('report-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeReportModal() {
+            const modal = document.getElementById('report-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function submitReport(e) {
+            e.preventDefault();
+            closeReportModal();
+            showToast("¡Gracias! Tu reporte fue enviado al equipo editorial para verificación.", "success");
+        }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-ua-baes text-white',
+                warning: 'bg-amber-600 text-white',
+                info: 'bg-ua-charcoal text-white'
+            };
+            toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2 animate-[fadeIn_0.25s_ease-out]`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3800);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Inicializar contenido por defecto al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            selectPorter(0);
+        });
+    </script>
+</body>
+</html>
