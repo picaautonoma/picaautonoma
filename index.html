@@ -705,9 +705,10 @@
     </div>
   </footer>
 
-  <!-- LÓGICA DE APLICACIÓN -->
+  <!-- LÓGICA DE APLICACIÓN (SIN CLAVES EXPUESTAS) -->
   <script>
-    // Configuración de serviciosconst BACKEND_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbypHYyeyjlEPNNdd0_h7dhljNorcO9yaor-3r6CseCHCWUJuJdWL3xVeCEP_5T_AWVhQw/exec";
+    // URL pública de tu puente seguro en Google Apps Script (donde la API Key vive oculta)
+    const BACKEND_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbypHYyeyjlEPNNdd0_h7dhljNorcO9yaor-3r6CseCHCWUJuJdWL3xVeCEP_5T_AWVhQw/exec";
 
     // Coordenadas base Campus Providencia Universidad Autónoma (Av. Pedro de Valdivia 425)
     const CAMPUS_COORDS = { lat: -33.4252, lng: -70.6122 };
@@ -848,7 +849,6 @@
       document.getElementById("mobile-menu").classList.toggle("hidden");
     }
 
-    // Mapa con servidor abierto estable de OpenStreetMap (evita bloques grises por bloqueo de referer)
     function initMap() {
       if (mapInstance) {
         mapInstance.invalidateSize(true);
@@ -1002,8 +1002,9 @@
       if (mapInstance) mapInstance.flyTo([userLocation.lat, userLocation.lng], 15);
     }
 
-    // ==================== CHATBOT CON MEMORIA DE SESIÓN (GROQ API) ====================
+    // ==================== CHATBOT CON MEMORIA DE SESIÓN (SIN API KEY EXPUESTA) ====================
     let chatHistory = [];
+    let lastRecommendedId = null;
 
     function buildSystemPrompt() {
       const catalog = LOCALES.map(l => {
@@ -1048,6 +1049,42 @@ ${catalog}
       processUserQuery(query);
     }
 
+    function getLocalFallbackRecommendation(query) {
+      const q = query.toLowerCase();
+      const allowed = [
+        "comer", "almorzar", "almuerzo", "picada", "local", "locales", "barato", "precio",
+        "baes", "junaeb", "cerca", "ubicacion", "ubicación", "valoracion", "valoración",
+        "sandwich", "sándwich", "completo", "empanada", "menu", "menú", "casera", "colacion",
+        "colación", "mejor", "opcion", "opción", "otra", "similar", "providencia", "hola"
+      ];
+      if (!allowed.some(w => q.includes(w))) {
+        return {
+          text: "Mi función está entrenada exclusivamente para orientarte sobre dónde comer barato, cerca y con o sin BAES alrededor de la Universidad Autónoma en Providencia: no respondo consultas administrativas ni de otros temas.<br /><br />Dime tu presupuesto o si necesitas pagar con Junaeb para recomendarte una picada.",
+          local: null
+        };
+      }
+
+      let pool = [...LOCALES];
+      if (q.includes("otra") || q.includes("similar") || q.includes("distinto")) {
+        pool = pool.filter(l => l.id !== lastRecommendedId);
+      }
+      if (q.includes("baes") || q.includes("junaeb")) {
+        pool = pool.filter(l => l.baes);
+      }
+      pool.sort((a, b) => {
+        const dA = getDistanceMeters(userLocation.lat, userLocation.lng, a.lat, a.lng);
+        const dB = getDistanceMeters(userLocation.lat, userLocation.lng, b.lat, b.lng);
+        return (b.rating * 20 - b.precioMin / 250 - dB / 80) - (a.rating * 20 - a.precioMin / 250 - dA / 80);
+      });
+
+      const chosen = pool[0] || LOCALES[0];
+      lastRecommendedId = chosen.id;
+      return {
+        text: `Analizando tu ubicación actual, precios más bajos verificados y valoración en Google, te recomiendo <span class="font-bold">${chosen.nombre}</span>: cuenta con menú desde $${chosen.precioMin.toLocaleString("es-CL")} y ${chosen.baesDetalle.toLowerCase()}.`,
+        local: chosen
+      };
+    }
+
     async function processUserQuery(query) {
       appendMessage(query, true);
       chatHistory.push({ role: "user", content: query });
@@ -1057,25 +1094,28 @@ ${catalog}
       submitBtn.textContent = "...";
 
       try {
+        if (!BACKEND_WEBAPP_URL || BACKEND_WEBAPP_URL.includes("PEGA_AQUI")) {
+          throw new Error("Puente pendiente de configurar");
+        }
+
         const response = await fetch(BACKEND_WEBAPP_URL, {
-     method: "POST",
-     headers: { "Content-Type": "text/plain;charset=utf-8" },
-     body: JSON.stringify({
-       action: "chat",
-       messages: [
-         { role: "system", content: buildSystemPrompt() },
-         ...chatHistory
-       ]
-     })
-   });
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "chat",
+            messages: [
+              { role: "system", content: buildSystemPrompt() },
+              ...chatHistory
+            ]
+          })
+        });
 
         const data = await response.json();
-        let reply = data.choices?.[0]?.message?.content || "";
+        const reply = data.choices?.[0]?.message?.content || "";
         if (!reply) throw new Error("Respuesta vacía");
 
         chatHistory.push({ role: "assistant", content: reply });
 
-        // Detectar etiqueta [LOCAL_ID:X] para animar el mapa y agregar enlace real a Google Maps
         const match = reply.match(/\[LOCAL_ID:(\d+)\]/);
         const cleanReply = reply.replace(/\[LOCAL_ID:\d+\]/g, "").trim().replace(/\n/g, "<br />");
 
@@ -1083,6 +1123,7 @@ ${catalog}
           const localId = parseInt(match[1], 10);
           const local = LOCALES.find(l => l.id === localId);
           if (local) {
+            lastRecommendedId = local.id;
             focusLocalOnMap(local.id);
             const dist = getDistanceMeters(userLocation.lat, userLocation.lng, local.lat, local.lng);
             const mins = getWalkingMinutes(dist);
@@ -1106,15 +1147,31 @@ ${catalog}
 
         appendMessage(cleanReply);
       } catch (err) {
-        // Respaldo local automático si no hay conexión externa
-        const fallbackLocal = LOCALES[0];
-        focusLocalOnMap(fallbackLocal.id);
-        appendMessage(`
-          Según tu ubicación actual, precios verificados y valoración en Google, te recomiendo <span class="font-bold">${fallbackLocal.nombre}</span> (desde $${fallbackLocal.precioMin.toLocaleString("es-CL")}, ${fallbackLocal.rating} &#9733;): acepta BAES en toda su carta.
-          <a href="${fallbackLocal.mapsUrl}" target="_blank" rel="noopener noreferrer" class="mt-2.5 block w-full py-2.5 px-3 rounded-xl bg-[#D52B1E] text-white text-xs font-bold text-center hover:bg-[#b82217] transition">
-            Ver ubicación real y cómo llegar en Google Maps
-          </a>
-        `);
+        const fallback = getLocalFallbackRecommendation(query);
+        chatHistory.push({ role: "assistant", content: fallback.text });
+
+        if (fallback.local) {
+          const local = fallback.local;
+          focusLocalOnMap(local.id);
+          const dist = getDistanceMeters(userLocation.lat, userLocation.lng, local.lat, local.lng);
+          const mins = getWalkingMinutes(dist);
+          appendMessage(`
+            ${fallback.text}
+            <div class="mt-3 p-3 rounded-xl bg-white border-l-4 border-[#D52B1E]">
+              <div class="flex items-center justify-between">
+                <strong class="text-xs text-[#3D3935]">${local.nombre}</strong>
+                <span class="text-amber-600 font-bold text-xs">${local.rating.toFixed(1)} &#9733;</span>
+              </div>
+              <p class="text-[11px] text-stone-600 mt-0.5">${local.direccion}</p>
+              <p class="text-[11px] font-bold text-[#D52B1E] mt-1">Desde $${local.precioMin.toLocaleString("es-CL")} · ${dist} m (${mins} min)</p>
+            </div>
+            <a href="${local.mapsUrl}" target="_blank" rel="noopener noreferrer" class="mt-2.5 block w-full py-2.5 px-3 rounded-xl bg-[#D52B1E] text-white text-xs font-bold text-center hover:bg-[#b82217] transition">
+              Ver ubicación real y cómo llegar en Google Maps
+            </a>
+          `);
+        } else {
+          appendMessage(fallback.text);
+        }
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Enviar";
@@ -1123,6 +1180,7 @@ ${catalog}
 
     function resetChat() {
       chatHistory = [];
+      lastRecommendedId = null;
       const box = document.getElementById("chat-messages");
       box.innerHTML = `
         <div class="bg-[#F6F6F5] border border-stone-200 rounded-2xl p-3.5 text-[#3D3935] leading-relaxed">
@@ -1182,19 +1240,19 @@ ${catalog}
 
       const now = new Date();
       const dateStr = now.toLocaleDateString("es-CL") + " " + now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
-      const newEntry = { author, local, text, date: dateStr, sheetId: GOOGLE_SHEETS_ID };
+      const newEntry = { author, local, text, date: dateStr };
 
-      // 1. Guardado inmediato persistente en el navegador
       studentComments.unshift(newEntry);
       localStorage.setItem("pica_comments_v1", JSON.stringify(studentComments));
       document.getElementById("comment-text").value = "";
       renderComments();
 
-      // 2. Envío hacia Google Sheets si la URL de Apps Script está configurada
-      if (BACKEND_WEBAPP_URL) { y await fetch(BACKEND_WEBAPP_URL, {
+      if (BACKEND_WEBAPP_URL && !BACKEND_WEBAPP_URL.includes("PEGA_AQUI")) {
+        try {
+          await fetch(BACKEND_WEBAPP_URL, {
             method: "POST",
             mode: "no-cors",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(newEntry)
           });
         } catch (err) {
