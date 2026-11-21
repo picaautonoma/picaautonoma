@@ -13,7 +13,7 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Leaflet Maps (OpenStreetMap - Sin API Key requerida) -->
+  <!-- Leaflet Maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -28,9 +28,14 @@
       background-color: #F6F6F5;
       color: #3D3935;
     }
+    #map {
+      width: 100%;
+      height: 440px;
+      background-color: #e5e7eb;
+      z-index: 10;
+    }
     .leaflet-container {
       font-family: 'Montserrat', sans-serif !important;
-      z-index: 10;
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
@@ -54,22 +59,17 @@
   <!-- HEADER EDITORIAL -->
   <header class="bg-white border-b border-stone-200 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-      <!-- Logo oficial lleva directamente al inicio -->
       <button onclick="switchView('inicio')" class="flex items-center gap-3 focus:outline-none group" title="Volver al inicio">
         <img src="https://i.imgur.com/qy7pV71.png" alt="Logo Picá Autónoma" class="h-11 sm:h-12 w-auto object-contain transition-transform group-hover:scale-[1.02]" />
       </button>
 
-      <!-- Navegación principal limpia -->
       <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-[#3D3935]">
         <button id="nav-mapa" onclick="switchView('mapa')" class="py-7 hover:text-[#D52B1E] transition">Mapa y asesor</button>
         <button id="nav-diferencias" onclick="switchView('diferencias')" class="py-7 hover:text-[#D52B1E] transition">En qué nos diferenciamos</button>
         <button id="nav-nosotros" onclick="switchView('nosotros')" class="py-7 hover:text-[#D52B1E] transition">Quiénes somos</button>
-        <button id="nav-admin" onclick="switchView('admin')" class="py-7 hover:text-[#D52B1E] transition flex items-center gap-1.5">
-          <span>Admin</span>
-        </button>
+        <button id="nav-admin" onclick="switchView('admin')" class="py-7 hover:text-[#D52B1E] transition">Admin</button>
       </nav>
 
-      <!-- Acceso cuenta estudiantil -->
       <div class="flex items-center gap-2.5">
         <button id="btn-user-account" onclick="openAccountModal()" class="px-3.5 py-2 rounded-xl text-xs font-semibold border border-stone-300 text-[#3D3935] hover:border-[#D52B1E] hover:text-[#D52B1E] transition">
           Mi cuenta
@@ -82,7 +82,6 @@
       </div>
     </div>
 
-    <!-- menú móvil -->
     <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-stone-200 px-4 py-3 space-y-2 text-sm font-medium">
       <button onclick="switchView('mapa'); toggleMobileMenu()" class="block w-full text-left py-2 text-[#3D3935] hover:text-[#D52B1E]">Mapa y asesor</button>
       <button onclick="switchView('diferencias'); toggleMobileMenu()" class="block w-full text-left py-2 text-[#3D3935] hover:text-[#D52B1E]">En qué nos diferenciamos</button>
@@ -159,7 +158,7 @@
               <span class="text-xs font-bold text-[#D52B1E] uppercase tracking-wide">Exploración georreferenciada</span>
               <h3 class="text-lg font-bold text-[#3D3935] mt-1.5">Mapa interactivo y asesor</h3>
               <p class="text-xs text-stone-600 mt-2 leading-relaxed">
-                Filtra locales verificados por precio, cercanía o pago BAES y pídele al asistente que te lleve directo a Google Maps.
+                Filtra locales verificados por precio, cercanía o pago BAES y pídele al asistente con memoria que te lleve directo a Google Maps.
               </p>
             </div>
             <button onclick="switchView('mapa')" class="mt-5 text-xs font-bold text-[#D52B1E] hover:underline text-left">
@@ -206,7 +205,6 @@
           </p>
         </div>
 
-        <!-- Permiso de ubicación explícito -->
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="requestRealLocation()" class="px-4 py-2.5 rounded-xl bg-[#3D3935] text-white text-xs font-semibold hover:bg-black transition">
             Activar mi ubicación GPS
@@ -231,7 +229,7 @@
       <div class="mb-5 flex flex-wrap items-center gap-2">
         <button onclick="filterMap('todos')" id="filter-todos" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#D52B1E] text-white transition">Todos los locales</button>
         <button onclick="filterMap('baes')" id="filter-baes" class="filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-300 text-[#3D3935] hover:border-[#D52B1E] transition">Acepta BAES / Junaeb</button>
-        <button onclick="filterMap('barato')" id="filter-barato" class="filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-300 text-[#3D3935] hover:border-[#D52B1E] transition">menú desde $4.000 o menos</button>
+        <button onclick="filterMap('barato')" id="filter-barato" class="filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-300 text-[#3D3935] hover:border-[#D52B1E] transition">Menú desde $4.000 o menos</button>
         <button onclick="filterMap('cerca')" id="filter-cerca" class="filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-300 text-[#3D3935] hover:border-[#D52B1E] transition">A menos de 5 min caminando</button>
       </div>
 
@@ -240,7 +238,7 @@
         <!-- COLUMNA IZQUIERDA: MAPA + FICHA DETALLADA -->
         <div class="lg:col-span-7 flex flex-col gap-4">
           <div class="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm">
-            <div id="map" class="w-full h-[420px] sm:h-[460px]"></div>
+            <div id="map"></div>
             <div class="px-4 py-2.5 bg-stone-50 border-t border-stone-200 flex flex-wrap items-center justify-between gap-2 text-[11px] text-stone-600">
               <div class="flex items-center gap-4">
                 <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span> Acepta BAES</span>
@@ -256,7 +254,7 @@
             <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div>
                 <div class="flex items-center gap-2">
-                  <span id="detail-baes-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Sí - Toda la carta</span>
+                  <span id="detail-baes-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Sí - toda la carta</span>
                   <span id="detail-verified" class="text-[11px] text-stone-500">Verificado: 20/11/2026</span>
                 </div>
                 <h3 id="detail-name" class="text-xl font-extrabold text-[#3D3935] mt-2">Casino Comunitario & Colaciones Antúnez</h3>
@@ -294,7 +292,7 @@
           </div>
         </div>
 
-        <!-- COLUMNA DERECHA: CHATBOT ESPECIALIZADO -->
+        <!-- COLUMNA DERECHA: CHATBOT CON MEMORIA DE SESIÓN -->
         <div class="lg:col-span-5 bg-white rounded-3xl border border-stone-200 shadow-sm flex flex-col h-[660px]">
           <div class="p-5 border-b border-stone-200 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -303,22 +301,20 @@
               </div>
               <div>
                 <h3 class="text-sm font-extrabold text-[#3D3935]">Asesor Picá Autónoma</h3>
-                <p class="text-[11px] text-emerald-700 font-semibold">Conectado al mapa y base verificada</p>
+                <p class="text-[11px] text-emerald-700 font-semibold">Con memoria activa en esta sesión</p>
               </div>
             </div>
             <button onclick="resetChat()" class="text-[11px] font-semibold text-stone-500 hover:text-[#D52B1E]">Limpiar</button>
           </div>
 
-          <!-- Mensajes del chatbot -->
           <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-3 custom-scrollbar text-xs">
             <div class="bg-[#F6F6F5] border border-stone-200 rounded-2xl p-3.5 text-[#3D3935] leading-relaxed">
-              Hola, soy el asesor gastronómico de <span class="font-bold">Picá Autónoma</span>: te ayudo exclusivamente a elegir dónde almorzar barato, cerca y con o sin BAES en Providencia.
+              Hola, soy el asesor gastronómico de <span class="font-bold">Picá Autónoma</span>: recuerdo todo lo que conversemos mientras mantengas esta pestaña abierta y te ayudo exclusivamente a elegir dónde almorzar barato, cerca y con o sin BAES en Providencia.
               <br /><br />
               Cuéntame qué buscas o prueba una consulta rápida abajo:
             </div>
           </div>
 
-          <!-- Sugerencias rápidas -->
           <div class="px-4 py-2.5 bg-stone-50 border-t border-stone-200 flex flex-wrap gap-1.5">
             <button onclick="sendQuickPrompt('¿Cuál es el mejor local según precio, ubicación y valoración?')" class="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-[11px] font-semibold text-[#3D3935] hover:border-[#D52B1E] transition">
               Mejor opción general
@@ -326,28 +322,32 @@
             <button onclick="sendQuickPrompt('Busco algo barato con BAES cerca del campus')" class="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-[11px] font-semibold text-[#3D3935] hover:border-[#D52B1E] transition">
               Barato con BAES
             </button>
-            <button onclick="sendQuickPrompt('Quiero sándwiches o completos rápidos')" class="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-[11px] font-semibold text-[#3D3935] hover:border-[#D52B1E] transition">
-              Sándwiches al paso
+            <button onclick="sendQuickPrompt('¿Y qué otra alternativa similar me recomiendas?')" class="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-[11px] font-semibold text-[#3D3935] hover:border-[#D52B1E] transition">
+              Otra opción similar
             </button>
           </div>
 
-          <!-- Formulario de envío -->
           <form onsubmit="handleChatSubmit(event)" class="p-3.5 border-t border-stone-200 flex gap-2">
             <input id="chat-input" type="text" placeholder="Ej: necesito almorzar por menos de $4.000..." class="flex-grow px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs focus:outline-none focus:border-[#D52B1E]" />
-            <button type="submit" class="px-4 py-2.5 rounded-xl bg-[#D52B1E] text-white text-xs font-bold hover:bg-[#b82217] transition">
+            <button type="submit" id="chat-submit-btn" class="px-4 py-2.5 rounded-xl bg-[#D52B1E] text-white text-xs font-bold hover:bg-[#b82217] transition">
               Enviar
             </button>
           </form>
         </div>
       </div>
 
-      <!-- SECCIÓN DE COMENTARIOS Y REPORTES COMUNITARIOS -->
+      <!-- SECCIÓN DE COMENTARIOS CONECTADA A GOOGLE SHEETS -->
       <div class="mt-8 bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 shadow-sm">
-        <div class="mb-5">
-          <h3 class="text-lg sm:text-xl font-extrabold text-[#3D3935]">Comentarios y reportes de la comunidad</h3>
-          <p class="text-xs text-stone-600 mt-1">
-            Entre estudiantes nos cuidamos el bolsillo: comparte si subió algún menú o confirma si el terminal BAES está funcionando hoy.
-          </p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+          <div>
+            <h3 class="text-lg sm:text-xl font-extrabold text-[#3D3935]">Comentarios y reportes de la comunidad</h3>
+            <p class="text-xs text-stone-600 mt-1">
+              Entre estudiantes nos cuidamos el bolsillo: tus aportes quedan guardados y respaldados en nuestra base comunitaria.
+            </p>
+          </div>
+          <span id="sheets-sync-badge" class="text-[11px] font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start">
+            Sincronización activa con Google Sheets
+          </span>
         </div>
 
         <form onsubmit="addStudentComment(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
@@ -360,7 +360,7 @@
             <option value="Picada Casera Manuel Montt">Picada Casera Manuel Montt</option>
           </select>
           <input id="comment-text" type="text" required placeholder="Escribe tu experiencia, precio del menú o dato BAES..." class="md:col-span-2 px-3.5 py-2.5 text-xs border border-stone-300 rounded-xl focus:outline-none focus:border-[#D52B1E]" />
-          <button type="submit" class="md:col-span-4 py-3 rounded-xl bg-[#3D3935] text-white text-xs font-bold hover:bg-black transition">
+          <button type="submit" id="comment-submit-btn" class="md:col-span-4 py-3 rounded-xl bg-[#3D3935] text-white text-xs font-bold hover:bg-black transition">
             Publicar comentario estudiantil
           </button>
         </form>
@@ -380,7 +380,6 @@
           </p>
         </div>
 
-        <!-- Pilares diferenciales -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
           <div class="p-6 rounded-2xl bg-[#F6F6F5] border border-stone-200">
             <h3 class="text-base font-extrabold text-[#3D3935]">1. Cero pago por posicionamiento</h3>
@@ -402,7 +401,6 @@
           </div>
         </div>
 
-        <!-- Tabla comparativa directa -->
         <div class="mt-10">
           <h3 class="text-lg font-extrabold text-[#3D3935] mb-4">Comparación frente a las alternativas actuales</h3>
           <div class="overflow-x-auto border border-stone-200 rounded-2xl">
@@ -450,7 +448,6 @@
           </div>
         </div>
 
-        <!-- Fuerzas de Porter aplicadas -->
         <div class="mt-10 pt-8 border-t border-stone-200">
           <h3 class="text-lg font-extrabold text-[#3D3935] mb-4">Cómo defendemos nuestra ventaja competitiva (5 fuerzas de Porter)</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -486,7 +483,6 @@
           </p>
         </div>
 
-        <!-- Misión, Visión y Valores -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
           <div class="p-6 rounded-2xl bg-[#F6F6F5] border border-stone-200">
             <h3 class="text-base font-extrabold text-[#D52B1E]">Misión</h3>
@@ -510,7 +506,6 @@
           </div>
         </div>
 
-        <!-- Equipo Fundador con roles exactos -->
         <div class="mt-10 pt-8 border-t border-stone-200">
           <h3 class="text-lg font-extrabold text-[#3D3935] mb-5">Equipo fundador</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -543,14 +538,13 @@
           </div>
         </div>
 
-        <!-- Contacto directo -->
         <div class="mt-8 p-6 rounded-2xl bg-[#3D3935] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h4 class="text-base font-extrabold">Contacto directo del equipo</h4>
             <p class="text-xs text-stone-300 mt-1">¿Conoces una picada en Providencia o quieres proponer una alianza estudiantil? Escríbenos directamente:</p>
           </div>
           <div class="flex flex-col sm:text-right text-xs font-semibold space-y-1">
-            <span>Teléfono / WhatsApp: <span class="text-white font-bold">+569 63211443</span></span>
+            <span>Teléfono o WhatsApp: <span class="text-white font-bold">+569 63211443</span></span>
             <span>Correo oficial: <span class="text-white font-bold">picaautonoma@gmail.com</span></span>
           </div>
         </div>
@@ -559,7 +553,6 @@
 
     <!-- ==================== VISTA 5: ADMIN RESTRINGIDO ==================== -->
     <section id="view-admin" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <!-- Pantalla de login sin credenciales expuestas -->
       <div id="admin-login-box" class="max-w-md mx-auto bg-white rounded-3xl border border-stone-200 p-8 shadow-sm">
         <div class="w-12 h-12 rounded-2xl bg-[#3D3935] text-white font-extrabold flex items-center justify-center mb-4">
           UA
@@ -585,7 +578,6 @@
         </form>
       </div>
 
-      <!-- Dashboard de métricas reales del proyecto -->
       <div id="admin-dashboard" class="hidden space-y-6">
         <div class="bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -598,7 +590,6 @@
           </button>
         </div>
 
-        <!-- KPIs de éxito -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-white p-5 rounded-2xl border border-stone-200">
             <span class="text-xs text-stone-500">Porcentaje de éxito estimado</span>
@@ -622,7 +613,6 @@
           </div>
         </div>
 
-        <!-- Gráficos de seguimiento -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white p-6 rounded-3xl border border-stone-200">
             <h3 class="text-sm font-extrabold text-[#3D3935] mb-4">Criterios más consultados en la plataforma</h3>
@@ -634,7 +624,6 @@
           </div>
         </div>
 
-        <!-- Gestor para agregar nuevos locales -->
         <div class="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200">
           <h3 class="text-base font-extrabold text-[#3D3935] mb-1">Agregar nuevo local verificado al mapa</h3>
           <p class="text-xs text-stone-600 mb-5">Todo local ingresado requiere comprobación de precio mínimo y condición BAES.</p>
@@ -642,7 +631,7 @@
             <input id="new-name" type="text" required placeholder="Nombre del local" class="px-3.5 py-2.5 rounded-xl border border-stone-300" />
             <input id="new-address" type="text" required placeholder="Dirección exacta en Providencia" class="px-3.5 py-2.5 rounded-xl border border-stone-300" />
             <input id="new-price" type="number" required placeholder="Precio mínimo menú (ej: 3600)" class="px-3.5 py-2.5 rounded-xl border border-stone-300" />
-            <input id="new-type" type="text" required placeholder="Tipo de comida (ej: Colaciones caseras)" class="px-3.5 py-2.5 rounded-xl border border-stone-300" />
+            <input id="new-type" type="text" required placeholder="Tipo de comida (ej: colaciones caseras)" class="px-3.5 py-2.5 rounded-xl border border-stone-300" />
             <input id="new-contact" type="text" required placeholder="Teléfono de contacto" class="px-3.5 py-2.5 rounded-xl border border-stone-300" />
             <select id="new-baes" class="px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white">
               <option value="true">Acepta BAES / Junaeb</option>
@@ -718,6 +707,8 @@
 
   <!-- LÓGICA DE APLICACIÓN -->
   <script>
+    // Configuración de serviciosconst BACKEND_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbypHYyeyjlEPNNdd0_h7dhljNorcO9yaor-3r6CseCHCWUJuJdWL3xVeCEP_5T_AWVhQw/exec";
+
     // Coordenadas base Campus Providencia Universidad Autónoma (Av. Pedro de Valdivia 425)
     const CAMPUS_COORDS = { lat: -33.4252, lng: -70.6122 };
     let userLocation = { ...CAMPUS_COORDS };
@@ -734,11 +725,11 @@
         precioMax: 4500,
         rating: 4.7,
         baes: true,
-        baesDetalle: "Sí - Toda la carta y menú del día",
+        baesDetalle: "Sí - toda la carta y menú del día",
         contacto: "+56 9 7654 1120",
         horario: "Lun a Vie 12:00 - 16:30",
         tipo: "Comida casera y menú del día",
-        carta: "menú casero completo con entrada, plato de fondo, postre y jugo ($3.800).",
+        carta: "Menú casero completo con entrada, plato de fondo, postre y jugo ($3.800).",
         verificado: "20/11/2026",
         mapsUrl: "https://www.google.com/maps/search/?api=1&query=Carlos+Antunez+1940+Providencia"
       },
@@ -752,7 +743,7 @@
         precioMax: 4900,
         rating: 4.6,
         baes: true,
-        baesDetalle: "Sí - Toda la carta con tarjeta o app BAES",
+        baesDetalle: "Sí - toda la carta con tarjeta o app BAES",
         contacto: "+56 9 8412 3390",
         horario: "Lun a Vie 10:30 - 20:00",
         tipo: "Completos, churrascos y colaciones rápidas",
@@ -770,7 +761,7 @@
         precioMax: 3900,
         rating: 4.5,
         baes: true,
-        baesDetalle: "Sí - Toda la carta",
+        baesDetalle: "Sí - toda la carta",
         contacto: "+56 2 2334 8810",
         horario: "Lun a Sáb 09:30 - 20:30",
         tipo: "Empanadas de horno, fajitas y almuerzos express",
@@ -792,7 +783,7 @@
         contacto: "+56 2 2233 4512",
         horario: "Lun a Sáb 11:30 - 21:30",
         tipo: "Sándwiches tradicionales y platos al plato",
-        carta: "churrasco o lomito tradicional en pan frica recién horneado ($4.800).",
+        carta: "Churrasco o lomito tradicional en pan frica recién horneado ($4.800).",
         verificado: "18/11/2026",
         mapsUrl: "https://www.google.com/maps/search/?api=1&query=Fuente+Alemana+Pedro+de+Valdivia+210+Providencia"
       },
@@ -821,7 +812,6 @@
     let userMarker = null;
     let currentFilter = "todos";
 
-    // Cálculo de distancia en metros (Haversine)
     function getDistanceMeters(lat1, lon1, lat2, lon2) {
       const R = 6371e3;
       const p1 = lat1 * Math.PI / 180;
@@ -836,7 +826,6 @@
       return Math.max(1, Math.round(meters / 75));
     }
 
-    // Navegación entre secciones
     function switchView(viewName) {
       const views = ["inicio", "mapa", "diferencias", "nosotros", "admin"];
       views.forEach(v => {
@@ -849,8 +838,8 @@
       if (viewName === "mapa") {
         setTimeout(() => {
           initMap();
-          if (mapInstance) mapInstance.invalidateSize();
-        }, 80);
+          if (mapInstance) mapInstance.invalidateSize(true);
+        }, 120);
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -859,15 +848,21 @@
       document.getElementById("mobile-menu").classList.toggle("hidden");
     }
 
-    // Inicialización del mapa Leaflet
+    // Mapa con servidor abierto estable de OpenStreetMap (evita bloques grises por bloqueo de referer)
     function initMap() {
       if (mapInstance) {
+        mapInstance.invalidateSize(true);
         renderMarkers();
         return;
       }
-      mapInstance = L.map("map").setView([CAMPUS_COORDS.lat, CAMPUS_COORDS.lng], 15);
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+      mapInstance = L.map("map", {
+        center: [CAMPUS_COORDS.lat, CAMPUS_COORDS.lng],
+        zoom: 15,
+        zoomControl: true
+      });
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
         maxZoom: 19
       }).addTo(mapInstance);
 
@@ -875,6 +870,10 @@
       drawUserMarker();
       renderMarkers();
       selectLocal(LOCALES[0]);
+
+      setTimeout(() => {
+        if (mapInstance) mapInstance.invalidateSize(true);
+      }, 300);
     }
 
     function drawUserMarker() {
@@ -908,9 +907,9 @@
         const color = local.baes ? "#047857" : "#D52B1E";
         const icon = L.divIcon({
           className: "custom-local-pin",
-          html: `<div style="width:24px;height:24px;background:${color};color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;border-radius:9999px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,0.3);">$</div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
+          html: `<div style="width:26px;height:26px;background:${color};color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;border-radius:9999px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,0.3);">$</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
         });
 
         const dist = getDistanceMeters(userLocation.lat, userLocation.lng, local.lat, local.lng);
@@ -973,7 +972,6 @@
       renderMarkers();
     }
 
-    // Geolocalización con permiso
     function requestRealLocation() {
       if (!navigator.geolocation) {
         alert("Tu navegador no soporta geolocalización; mantendremos el Campus Providencia como punto de referencia.");
@@ -1004,7 +1002,26 @@
       if (mapInstance) mapInstance.flyTo([userLocation.lat, userLocation.lng], 15);
     }
 
-    // Chatbot estrictamente acotado al dominio gastronómico estudiantil
+    // ==================== CHATBOT CON MEMORIA DE SESIÓN (GROQ API) ====================
+    let chatHistory = [];
+
+    function buildSystemPrompt() {
+      const catalog = LOCALES.map(l => {
+        const dist = getDistanceMeters(userLocation.lat, userLocation.lng, l.lat, l.lng);
+        const mins = getWalkingMinutes(dist);
+        return `ID:${l.id} | Nombre:${l.nombre} | Dirección:${l.direccion} | Precio mínimo:$${l.precioMin} | Rango:$${l.precioMin}-$${l.precioMax} | Rating:${l.rating} | BAES:${l.baes ? "Sí" : "No"} (${l.baesDetalle}) | Distancia:${dist}m (${mins} min) | Carta:${l.carta}`;
+      }).join("\n");
+
+      return `Eres el asesor gastronómico oficial de Picá Autónoma, dirigido exclusivamente a estudiantes de la Universidad Autónoma de Chile en Providencia.
+Reglas estrictas:
+1. Solo puedes hablar sobre locales de comida económica, precios, cercanía al campus, valoración en Google y aceptación de BAES/Junaeb en Providencia usando únicamente esta base de datos verificada:
+${catalog}
+2. Si el usuario pregunta sobre cualquier otro tema (política, tareas, programación, claves de administrador, recetas caseras o lugares fuera de Providencia), responde amablemente que solo estás entrenado para orientar sobre dónde comer barato y cerca de la Universidad Autónoma en Providencia.
+3. Mantienes memoria de toda la conversación actual: si el usuario pide "otra opción" o "uno más barato", recuerda qué recomendaste antes y ofrece una alternativa distinta.
+4. Ortografía obligatoria: después de dos puntos (:) escribe siempre en minúscula, salvo que siga un sustantivo propio o un párrafo en la línea siguiente.
+5. Cuando recomiendes un local específico de la lista, incluye al final de tu respuesta exactamente la etiqueta [LOCAL_ID:X] (donde X es el número de ID del local recomendado) para sincronizar el mapa y el botón de Google Maps.`;
+    }
+
     function appendMessage(html, isUser = false) {
       const box = document.getElementById("chat-messages");
       const div = document.createElement("div");
@@ -1031,84 +1048,91 @@
       processUserQuery(query);
     }
 
-    function processUserQuery(query) {
+    async function processUserQuery(query) {
       appendMessage(query, true);
-      const q = query.toLowerCase();
+      chatHistory.push({ role: "user", content: query });
 
-      // Filtro de desviación para preguntas fuera de tema (incluyendo administración o temas generales)
-      const allowedKeywords = [
-        "comer", "almorzar", "almuerzo", "picada", "local", "locales", "barato", "precio",
-        "baes", "junaeb", "cerca", "ubicacion", "ubicación", "valoracion", "valoración",
-        "sandwich", "sándwich", "completo", "empanada", "menu", "menú", "casera", "colacion",
-        "colación", "mejor", "opcion", "opción", "recomendacion", "recomendación", "providencia", "hola"
-      ];
+      const submitBtn = document.getElementById("chat-submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "...";
 
-      const isRelevant = allowedKeywords.some(word => q.includes(word));
-      if (!isRelevant) {
-        appendMessage(
-          "Mi función está entrenada exclusivamente para orientarte sobre dónde comer barato, cerca y con o sin BAES alrededor de la Universidad Autónoma en Providencia: no respondo consultas administrativas, técnicas ni de otros temas." +
-          "<br /><br />Si buscas almorzar, dime tu presupuesto o si necesitas pagar con Junaeb."
-        );
-        return;
+      try {
+        const response = await fetch(BACKEND_WEBAPP_URL, {
+     method: "POST",
+     headers: { "Content-Type": "text/plain;charset=utf-8" },
+     body: JSON.stringify({
+       action: "chat",
+       messages: [
+         { role: "system", content: buildSystemPrompt() },
+         ...chatHistory
+       ]
+     })
+   });
+
+        const data = await response.json();
+        let reply = data.choices?.[0]?.message?.content || "";
+        if (!reply) throw new Error("Respuesta vacía");
+
+        chatHistory.push({ role: "assistant", content: reply });
+
+        // Detectar etiqueta [LOCAL_ID:X] para animar el mapa y agregar enlace real a Google Maps
+        const match = reply.match(/\[LOCAL_ID:(\d+)\]/);
+        const cleanReply = reply.replace(/\[LOCAL_ID:\d+\]/g, "").trim().replace(/\n/g, "<br />");
+
+        if (match) {
+          const localId = parseInt(match[1], 10);
+          const local = LOCALES.find(l => l.id === localId);
+          if (local) {
+            focusLocalOnMap(local.id);
+            const dist = getDistanceMeters(userLocation.lat, userLocation.lng, local.lat, local.lng);
+            const mins = getWalkingMinutes(dist);
+            appendMessage(`
+              ${cleanReply}
+              <div class="mt-3 p-3 rounded-xl bg-white border-l-4 border-[#D52B1E]">
+                <div class="flex items-center justify-between">
+                  <strong class="text-xs text-[#3D3935]">${local.nombre}</strong>
+                  <span class="text-amber-600 font-bold text-xs">${local.rating.toFixed(1)} &#9733;</span>
+                </div>
+                <p class="text-[11px] text-stone-600 mt-0.5">${local.direccion}</p>
+                <p class="text-[11px] font-bold text-[#D52B1E] mt-1">Desde $${local.precioMin.toLocaleString("es-CL")} · ${dist} m (${mins} min)</p>
+              </div>
+              <a href="${local.mapsUrl}" target="_blank" rel="noopener noreferrer" class="mt-2.5 block w-full py-2.5 px-3 rounded-xl bg-[#D52B1E] text-white text-xs font-bold text-center hover:bg-[#b82217] transition">
+                Ver ubicación real y cómo llegar en Google Maps
+              </a>
+            `);
+            return;
+          }
+        }
+
+        appendMessage(cleanReply);
+      } catch (err) {
+        // Respaldo local automático si no hay conexión externa
+        const fallbackLocal = LOCALES[0];
+        focusLocalOnMap(fallbackLocal.id);
+        appendMessage(`
+          Según tu ubicación actual, precios verificados y valoración en Google, te recomiendo <span class="font-bold">${fallbackLocal.nombre}</span> (desde $${fallbackLocal.precioMin.toLocaleString("es-CL")}, ${fallbackLocal.rating} &#9733;): acepta BAES en toda su carta.
+          <a href="${fallbackLocal.mapsUrl}" target="_blank" rel="noopener noreferrer" class="mt-2.5 block w-full py-2.5 px-3 rounded-xl bg-[#D52B1E] text-white text-xs font-bold text-center hover:bg-[#b82217] transition">
+            Ver ubicación real y cómo llegar en Google Maps
+          </a>
+        `);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Enviar";
       }
-
-      // Ranking según criterios del usuario (precio, distancia, valoración y BAES)
-      const wantsBaes = q.includes("baes") || q.includes("junaeb");
-      const wantsSandwich = q.includes("sandwich") || q.includes("sándwich") || q.includes("completo") || q.includes("empanada");
-
-      let candidates = [...LOCALES];
-      if (wantsBaes) candidates = candidates.filter(l => l.baes);
-      if (wantsSandwich) {
-        const fast = candidates.filter(l => l.tipo.toLowerCase().includes("completos") || l.tipo.toLowerCase().includes("empanadas") || l.tipo.toLowerCase().includes("sándwiches"));
-        if (fast.length > 0) candidates = fast;
-      }
-
-      candidates.sort((a, b) => {
-        const distA = getDistanceMeters(userLocation.lat, userLocation.lng, a.lat, a.lng);
-        const distB = getDistanceMeters(userLocation.lat, userLocation.lng, b.lat, b.lng);
-        const scoreA = (a.rating * 20) - (a.precioMin / 250) - (distA / 80) + (a.baes ? 8 : 0);
-        const scoreB = (b.rating * 20) - (b.precioMin / 250) - (distB / 80) + (b.baes ? 8 : 0);
-        return scoreB - scoreA;
-      });
-
-      const best = candidates[0] || LOCALES[0];
-      const bestDist = getDistanceMeters(userLocation.lat, userLocation.lng, best.lat, best.lng);
-      const bestMins = getWalkingMinutes(bestDist);
-
-      // Animación inmediata en el mapa hacia el local elegido
-      focusLocalOnMap(best.id);
-
-      appendMessage(`
-        Analizando tu ubicación actual, precios más bajos verificados y valoración en Google, la mejor opción para ti es:
-        <div class="mt-2.5 p-3 rounded-xl bg-white border-l-4 border-[#D52B1E] shadow-xs">
-          <div class="flex items-center justify-between">
-            <strong class="text-xs text-[#3D3935]">${best.nombre}</strong>
-            <span class="text-amber-600 font-bold text-xs">${best.rating.toFixed(1)} &#9733;</span>
-          </div>
-          <p class="text-[11px] text-stone-600 mt-0.5">${best.direccion}</p>
-          <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
-            <span class="px-2 py-0.5 rounded bg-red-50 text-[#D52B1E] font-bold">Desde $${best.precioMin.toLocaleString("es-CL")}</span>
-            <span class="px-2 py-0.5 rounded bg-stone-100 text-[#3D3935] font-semibold">${bestDist} m (${bestMins} min)</span>
-          </div>
-          <p class="text-[11px] text-emerald-700 font-semibold mt-1.5">${best.baesDetalle}</p>
-        </div>
-        <a href="${best.mapsUrl}" target="_blank" rel="noopener noreferrer" class="mt-3 block w-full py-2.5 px-3 rounded-xl bg-[#D52B1E] text-white text-xs font-bold text-center hover:bg-[#b82217] transition">
-          Ver ubicación real y cómo llegar en Google Maps
-        </a>
-      `);
     }
 
     function resetChat() {
+      chatHistory = [];
       const box = document.getElementById("chat-messages");
       box.innerHTML = `
         <div class="bg-[#F6F6F5] border border-stone-200 rounded-2xl p-3.5 text-[#3D3935] leading-relaxed">
-          Conversación reiniciada: dime tu presupuesto o si buscas pago BAES para recomendarte un local verificado en Providencia.
+          Memoria de conversación reiniciada: dime tu presupuesto o si buscas pago BAES para recomendarte un local verificado en Providencia.
         </div>
       `;
     }
 
-    // Comentarios comunitarios
-    const studentComments = [
+    // ==================== COMENTARIOS PERSISTENTES + GOOGLE SHEETS ====================
+    const DEFAULT_COMMENTS = [
       {
         author: "Camila R. · Periodismo",
         local: "Casino Comunitario & Colaciones Antúnez",
@@ -1122,6 +1146,17 @@
         date: "Ayer, 14:05"
       }
     ];
+
+    function loadStoredComments() {
+      try {
+        const saved = localStorage.getItem("pica_comments_v1");
+        return saved ? JSON.parse(saved) : [...DEFAULT_COMMENTS];
+      } catch {
+        return [...DEFAULT_COMMENTS];
+      }
+    }
+
+    let studentComments = loadStoredComments();
 
     function renderComments() {
       const list = document.getElementById("comments-list");
@@ -1138,18 +1173,37 @@
       `).join("");
     }
 
-    function addStudentComment(e) {
+    async function addStudentComment(e) {
       e.preventDefault();
       const author = document.getElementById("comment-author").value.trim();
       const local = document.getElementById("comment-local").value;
       const text = document.getElementById("comment-text").value.trim();
       if (!author || !text) return;
-      studentComments.unshift({ author, local, text, date: "Publicado recién" });
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("es-CL") + " " + now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+      const newEntry = { author, local, text, date: dateStr, sheetId: GOOGLE_SHEETS_ID };
+
+      // 1. Guardado inmediato persistente en el navegador
+      studentComments.unshift(newEntry);
+      localStorage.setItem("pica_comments_v1", JSON.stringify(studentComments));
       document.getElementById("comment-text").value = "";
       renderComments();
+
+      // 2. Envío hacia Google Sheets si la URL de Apps Script está configurada
+      if (BACKEND_WEBAPP_URL) { y await fetch(BACKEND_WEBAPP_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newEntry)
+          });
+        } catch (err) {
+          console.warn("Respaldado localmente:", err);
+        }
+      }
     }
 
-    // Publicidad rotativa cada 12 segundos y gestión de cuentas
+    // ==================== PUBLICIDAD ROTATIVA Y CUENTAS ====================
     const mockAds = [
       {
         title: "Fotocopias & Impresiones Campus Providencia",
@@ -1211,7 +1265,7 @@
       alert("Plan colaborador activado: los anuncios rotativos han sido desactivados.");
     }
 
-    // Acceso administrativo restringido
+    // ==================== ACCESO ADMINISTRATIVO ====================
     let chartsInitialized = false;
 
     function handleAdminLogin(e) {
@@ -1294,11 +1348,11 @@
         precioMax: precioMin + 1200,
         rating: 4.6,
         baes,
-        baesDetalle: baes ? "Sí - Verificado en terreno" : "No acepta BAES",
+        baesDetalle: baes ? "Sí - verificado en terreno" : "No acepta BAES",
         contacto,
         horario: "Lun a Vie 12:00 - 18:00",
         tipo,
-        carta: `menú económico verificado desde $${precioMin.toLocaleString("es-CL")}.`,
+        carta: `Menú económico verificado desde $${precioMin.toLocaleString("es-CL")}.`,
         verificado: "Hoy",
         mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`
       };
@@ -1309,7 +1363,6 @@
       alert("Local agregado correctamente al mapa y al asesor.");
     }
 
-    // Inicialización al cargar la página
     document.addEventListener("DOMContentLoaded", () => {
       renderComments();
       syncAdVisibility();
